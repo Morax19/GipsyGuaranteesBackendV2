@@ -3,8 +3,8 @@ import sys
 
 from django.core.wsgi import get_wsgi_application
 
-# Set the default settings module for the 'backend' project.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+settings_module = 'crud.deployment' if 'WEBSITE_HOSTNAME' in os.environ else 'crud.settings'
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 
 # Get the WSGI application for the project.
 application = get_wsgi_application()

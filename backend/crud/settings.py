@@ -1,6 +1,6 @@
 import os
 
-#SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+
 SECRET_KEY = "6=p=*o-dp#gm(iili+rtq)yc0j_ki6%l-vi_vgr6)q55!i&d-#"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
