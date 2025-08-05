@@ -1,6 +1,5 @@
 import os
 
-
 SECRET_KEY = "6=p=*o-dp#gm(iili+rtq)yc0j_ki6%l-vi_vgr6)q55!i&d-#"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'warranty',  # Your app name
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -39,7 +38,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'backend.urls'
+ROOT_URLCONF = 'crud.urls'
 
 TEMPLATES = [
     {
@@ -57,7 +56,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+WSGI_APPLICATION = 'crud.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
