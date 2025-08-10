@@ -10,8 +10,8 @@ SECRET_KEY = os.environ['MY_SECRET_KEY']
 
 ALLOWED_HOSTS = [
     os.environ['WEBSITE_HOSTNAME'],
-    'https://www.garantiasgipsy.com/',
-    'https://gipsy-app-guarantees-dgbqgsdhhkg2a4ea.eastus2-01.azurewebsites.net/'
+    'www.garantiasgipsy.com/',
+    'gipsy-app-guarantees-dgbqgsdhhkg2a4ea.eastus2-01.azurewebsites.net/'
 
 ]
 
