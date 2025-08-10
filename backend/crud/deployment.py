@@ -6,7 +6,11 @@ DEBUG = False
 
 SECRET_KEY = os.environ['MY_SECRET_KEY']
 
-ALLOWED_HOST = [os.environ['WEBSITE_HOSTNAME']]
+ALLOWED_HOSTS = [os.environ['WEBSITE_HOSTNAME']]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://icy-tree-06332be0f.1.azurestaticapps.net/",  # or the port your React app runs on
+]
 
 CSRF_TRUSTED_ORIGINS = ['https://'+os.environ['WEBSITE_HOSTNAME']]
 
@@ -21,8 +25,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-#CORS_ALLOWED_ORIGINS = []
 
 STORAGES = {
     "default": {
