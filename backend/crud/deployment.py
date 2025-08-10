@@ -1,15 +1,22 @@
 import os
 from .settings import *
 from .settings import BASE_DIR
+import sys
+print("WEBSITE_HOSTNAME:", os.environ.get('WEBSITE_HOSTNAME'), file=sys.stderr)
 
 DEBUG = False
 
 SECRET_KEY = os.environ['MY_SECRET_KEY']
 
-ALLOWED_HOSTS = [os.environ['WEBSITE_HOSTNAME']]
+ALLOWED_HOSTS = [
+    os.environ['WEBSITE_HOSTNAME'],
+    'https://www.garantiasgipsy.com/',
+    'https://gipsy-app-guarantees-dgbqgsdhhkg2a4ea.eastus2-01.azurewebsites.net/'
+
+]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://icy-tree-06332be0f.1.azurestaticapps.net/",  # or the port your React app runs on
+    "https://icy-tree-06332be0f.1.azurestaticapps.net",  # or the port your React app runs on
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://'+os.environ['WEBSITE_HOSTNAME']]
