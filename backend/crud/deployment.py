@@ -4,7 +4,7 @@ from .settings import BASE_DIR
 import sys
 print("WEBSITE_HOSTNAME:", os.environ.get('WEBSITE_HOSTNAME'), file=sys.stderr)
 
-DEBUG = False
+DEBUG = True
 
 SECRET_KEY = os.environ['MY_SECRET_KEY']
 
