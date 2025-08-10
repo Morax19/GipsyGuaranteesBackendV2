@@ -88,7 +88,7 @@ STATIC_URL = '/static/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@example.com'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['https://gipsy-app-guarantees-dgbqgsdhhkg2a4ea.eastus2-01.azurewebsites.net/', 'www.garantiasgipsy.com', 'localhost', '127.0.0.1']
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # or the port your React app runs on
