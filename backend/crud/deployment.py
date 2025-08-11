@@ -48,6 +48,9 @@ try:
 
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+    USE_X_FORWARDED_HOST = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
     print("DJANGO_SETTINGS_MODULE:", os.environ.get('DJANGO_SETTINGS_MODULE'), file=sys.stderr)
     print("ALLOWED_HOSTS:", ALLOWED_HOSTS, file=sys.stderr)
     print("WEBSITE_HOSTNAME:", os.environ.get('WEBSITE_HOSTNAME'), file=sys.stderr)
