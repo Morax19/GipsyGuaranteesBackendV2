@@ -3,11 +3,7 @@ import os
 SECRET_KEY = "6=p=*o-dp#gm(iili+rtq)yc0j_ki6%l-vi_vgr6)q55!i&d-#"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-if os.getenv('DATABASE_URL'):
-    import dj_database_url
-    DATABASES = { 'default': dj_database_url.parse(os.environ['DATABASE_URL']) }
-else:
-    # Default to SQLite for local development
+if not os.getenv('DATABASE_URL'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
