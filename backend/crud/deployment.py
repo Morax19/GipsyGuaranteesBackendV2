@@ -40,7 +40,7 @@ STORAGES = {
     },
 }
 
-STATIC_ROOT = BASE_DIR/'staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 print("DJANGO_SETTINGS_MODULE:", os.environ.get('DJANGO_SETTINGS_MODULE'), file=sys.stderr)
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS, file=sys.stderr)
