@@ -23,7 +23,7 @@ try:
         }
     }   
 
-    CSRF_TRUSTED_ORIGINS = ['https://'+os.environ.get('WEBSITE_HOSTNAME', '')]
+    #CSRF_TRUSTED_ORIGINS = ['https://'+os.environ.get('WEBSITE_HOSTNAME', '')]
 
     MIDDLEWARE = [
         'corsheaders.middleware.CorsMiddleware',
