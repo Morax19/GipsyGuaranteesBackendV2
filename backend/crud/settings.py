@@ -3,13 +3,20 @@ import os
 SECRET_KEY = "6=p=*o-dp#gm(iili+rtq)yc0j_ki6%l-vi_vgr6)q55!i&d-#"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-if not os.getenv('DATABASE_URL'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
+# Conexión a la BD Azure
+DATABASES = {
+    'default': {
+        'ENGINE': 'sql_server.pyodbc',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_SERVER'),
+        'PORT': '1433',
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+        },
     }
+}
 
 INSTALLED_APPS = [
     'django.contrib.admin',

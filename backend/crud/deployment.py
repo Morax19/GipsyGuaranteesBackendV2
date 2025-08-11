@@ -17,10 +17,18 @@ CORS_ALLOWED_ORIGINS = [
     "https://icy-tree-06332be0f.1.azurestaticapps.net",
 ]
 
+# Conexión a la BD Azure
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'sql_server.pyodbc',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_SERVER'),
+        'PORT': '1433',
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+        },
     }
 }   
 
@@ -55,3 +63,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 print("DJANGO_SETTINGS_MODULE:", os.environ.get('DJANGO_SETTINGS_MODULE'), file=sys.stderr)
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS, file=sys.stderr)
 print("WEBSITE_HOSTNAME:", os.environ.get('WEBSITE_HOSTNAME'), file=sys.stderr)
+
+
