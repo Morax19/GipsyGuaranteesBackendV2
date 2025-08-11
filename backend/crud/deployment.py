@@ -6,7 +6,9 @@ import sys
 try:
     DEBUG = True
 
-    SECRET_KEY = os.environ['MY_SECRET_KEY']
+    SECRET_KEY = os.environ.get('MY_SECRET_KEY')
+    if not SECRET_KEY:
+        raise Exception('MY_SECRET_KEY environment variable is missing!')
 
     ALLOWED_HOSTS = ['*']
 
@@ -14,7 +16,7 @@ try:
         "https://icy-tree-06332be0f.1.azurestaticapps.net",
     ]
 
-    CSRF_TRUSTED_ORIGINS = ['https://'+os.environ['WEBSITE_HOSTNAME']]
+    CSRF_TRUSTED_ORIGINS = ['https://'+os.environ.get('WEBSITE_HOSTNAME', '')]
 
     MIDDLEWARE = [
         'corsheaders.middleware.CorsMiddleware',
