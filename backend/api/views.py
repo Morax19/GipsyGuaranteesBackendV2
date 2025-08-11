@@ -12,6 +12,7 @@ from django.conf import settings
 import secrets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+import sys
 
 # Create your views here.
 @api_view(['GET'])
@@ -140,4 +141,5 @@ def forgot_password(request):
     return JsonResponse({'message': 'Temporary password sent to your email.'}, status=200)
 
 def healthz(request):
+    print("HEALTHZ Host header:", request.get_host(), file=sys.stderr)
     return HttpResponse("OK")
