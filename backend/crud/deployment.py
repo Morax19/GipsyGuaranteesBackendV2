@@ -40,19 +40,6 @@ STORAGES = {
     },
 }
 
-#CONNECTION = os.environ['DB_CONNECTION_HERE']
-#CONNECTION_STR = {pair.split('=')[0]: pair.split('=')[1] for pair in CONNECTION.split(';') if '=' in pair}
-#CONNECTION_STR = {pair.split('=')[0]: pair.split('=')[1] for pair in CONNECTION.split(' ')}
-DATABASES =  {
-    "default": {
-        "ENGINE": "django.db.backends.sqlserver",
-        "NAME": CONNECTION_STR['dbname'],
-        "HOST": CONNECTION_STR['host'],
-        "USER": CONNECTION_STR['user'],
-        "PASSWORD": CONNECTION_STR['password'],
-    }
-}
-
 STATIC_ROOT = BASE_DIR/'staticfiles'
 
 print("DJANGO_SETTINGS_MODULE:", os.environ.get('DJANGO_SETTINGS_MODULE'), file=sys.stderr)
