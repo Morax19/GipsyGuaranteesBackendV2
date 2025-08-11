@@ -16,6 +16,13 @@ try:
         "https://icy-tree-06332be0f.1.azurestaticapps.net",
     ]
 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }   
+
     CSRF_TRUSTED_ORIGINS = ['https://'+os.environ.get('WEBSITE_HOSTNAME', '')]
 
     MIDDLEWARE = [
