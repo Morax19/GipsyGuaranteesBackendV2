@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -138,3 +138,6 @@ def forgot_password(request):
         fail_silently=True,
     )
     return JsonResponse({'message': 'Temporary password sent to your email.'}, status=200)
+
+def healthz(request):
+    return HttpResponse("OK")
