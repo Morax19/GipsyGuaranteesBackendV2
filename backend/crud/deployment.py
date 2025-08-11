@@ -7,14 +7,10 @@ DEBUG = True
 
 SECRET_KEY = os.environ['MY_SECRET_KEY']
 
-ALLOWED_HOSTS = [
-    os.environ['WEBSITE_HOSTNAME'],
-    'gipsy-app-guarantees-dgbqgsdhhkg2a4ea.eastus2-01.azurewebsites.net'
-
-]
+ALLOWED_HOSTS = ['*']
 
 CORS_ALLOWED_ORIGINS = [
-    "https://icy-tree-06332be0f.1.azurestaticapps.net",  # or the port your React app runs on
+    "https://icy-tree-06332be0f.1.azurestaticapps.net",
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://'+os.environ['WEBSITE_HOSTNAME']]
