@@ -1,7 +1,6 @@
 import os
 
-SECRET_KEY = "6=p=*o-dp#gm(iili+rtq)yc0j_ki6%l-vi_vgr6)q55!i&d-#"
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SECRET_KEY = os.environ.get('MY_SECRET_KEY')
 
 # Conexión a la BD Azure
 DATABASES = {
@@ -11,7 +10,7 @@ DATABASES = {
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('DB_SERVER'),
-        'PORT': '1433',
+        'PORT': os.environ.get('DB_PORT'),
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
         },
