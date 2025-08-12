@@ -3,6 +3,9 @@ from .settings import *
 from .settings import BASE_DIR
 import sys
 
+for key, value in os.environ.items():
+    print(f'{key}: {value}')
+    
 DEBUG = False
 
 SECRET_KEY = os.environ.get('MY_SECRET_KEY')
