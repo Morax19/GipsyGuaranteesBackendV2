@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Conexión a la BD Azure
 DATABASES = {
     'default': {
-        'ENGINE': 'sql_server.pyodbc',
+        'ENGINE': 'mssql',
         'NAME': os.environ.get('DB_NAME'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
@@ -16,7 +16,7 @@ DATABASES = {
             'driver': 'ODBC Driver 17 for SQL Server',
         },
     }
-}
+} 
 
 INSTALLED_APPS = [
     'django.contrib.admin',
