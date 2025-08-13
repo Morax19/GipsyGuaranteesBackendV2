@@ -2,7 +2,10 @@ import os
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(dotenv_path=os.path.join(BASE_DIR, '..', '.env'))
+
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.', '.env'))
+
+DEBUG = True
 
 SECRET_KEY = os.environ.get('MY_SECRET_KEY')
 
