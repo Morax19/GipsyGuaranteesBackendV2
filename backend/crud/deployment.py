@@ -3,7 +3,7 @@ from .settings import *
 from .settings import BASE_DIR
 import sys
 
-DEBUG = False
+#DEBUG = False
 
 SECRET_KEY = os.environ.get('MY_SECRET_KEY')
 
@@ -13,7 +13,7 @@ ALLOWED_HOSTS = [
 
 CORS_ALLOWED_ORIGINS = [
     # URL del frontend REACT
-    "https://icy-tree-06332be0f.1.azurestaticapps.net",
+    os.environ.get('VITE_FRONT_API_URL'),
 ]
 
 # Conexión a la BD Azure
@@ -32,8 +32,7 @@ DATABASES = {
 }   
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://'+os.environ.get('WEBSITE_HOSTNAME', ''),
-    'https://'+os.environ.get('CUSTOM_HOSTNAME', '')
+    'https://'+os.environ.get('WEBSITE_HOSTNAME', '')
 ]
 
 MIDDLEWARE = [
