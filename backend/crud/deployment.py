@@ -8,7 +8,8 @@ import sys
 SECRET_KEY = os.environ.get('MY_SECRET_KEY')
 
 ALLOWED_HOSTS = [
-    os.environ.get('WEBSITE_HOSTNAME')
+    os.environ.get('WEBSITE_HOSTNAME'),
+    os.environ.get('CUSTOM_HOST_NAME')
 ]
 
 CORS_ALLOWED_ORIGINS = [
