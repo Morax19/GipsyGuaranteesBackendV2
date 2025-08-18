@@ -1,15 +1,157 @@
 from django.db import models
 from django.utils import timezone
+from django.db import transaction
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+
+"""
+    This code defines the models for Gipsy Guarantees Backend
+"""
+class CustomUserManager(BaseUserManager):
+    """
+    Custom manager to handle the different users creation
+    """
+    def create_customer(
+        self,
+        firstName,
+        lastName,
+        email,
+        password,
+        address=None,
+        phone=None,
+        zip_code=None):
+        """
+        This method handles the registration for Warranty.Customer and also creates
+        the respective User associated with the Warranty.Customer.
+        It requires the first name, last name, email, and password.
+        The address, phone, and zip code are optional.
+        Raises ValueError if the email is not provided.
+        :param firstName: First name of the customer
+        :param lastName: Last name of the customer
+        :param email: Email address of the customer (used as username in User)
+        :param password: Password for the user
+        :param address: Address of the customer (optional)
+        :param phone: Phone number of the customer (optional)
+        :param zip_code: Zip code of the customer (optional)
+        :return: The created user instance
+        """
+        if not email:
+            raise ValueError('El correo electrónico es obligatorio.')
+        
+        try:
+            validate_email(email)
+        except ValidationError:
+            raise ValueError('Correo electrónico inválido.')
+
+        with transaction.atomic():
+
+            customer = WarrantyCustomer.objects.create(
+                FirstName=firstName,
+                LastName=lastName,
+                EmailAddress=email,
+                PhoneNumber=phone,
+                Zip=zip_code
+            )
+
+            role = Role.get_or_create_role('Cliente')
+
+            user = self.model(
+                User=email,
+                registrationDate=timezone.now(),
+                CustomerID=customer,
+                roleID=role,
+                is_staff=False
+            )
+
+            user.set_password(password)
+            user.save(using=self._db)
+
+        return user  
+    
+    def create_tech(
+        self,
+        username,
+        password,
+        regDate,
+        roleDescription='Servicio Técnico'):
+        """
+        This method creates a technical user with the specified username, password,
+        registration date, and role description. It requires the username, password,
+        and registration date. The role description defaults to 'Servicio Técnico'.
+        Raises ValueError if the username is not provided.
+        :param username: Username for the technical user (should be an email for consistency)
+        :param password: Password for the technical user
+        :param regDate: Registration date for the technical user
+        :param roleDescription: Description of the role (default is 'Servicio Técnico')
+        :return: The created technical user instance
+        """
+        if not username:
+            raise ValueError('El nombre de usuario es obligatorio.')
+        
+        role = Role.get_or_create_role(roleDescription)
+
+        tech_user = self.model(
+            User=username,
+            registrationDate=regDate,
+            roleID=role,
+            is_staff=True
+        )
+
+        tech_user.set_password(password)
+        tech_user.save(using=self._db)
+
+        return tech_user
+
+    def create_admin(
+        self,
+        username,
+        password,
+        regDate,
+        roleDescription='Administrador'):
+        """
+        This method creates an admin user with the specified username, password,
+        registration date, and role description. It requires the username, password,
+        and registration date. The role description defaults to 'Administrador'.
+        Raises ValueError if the username is not provided.
+        :param username: Username for the admin user (should be an email for consistency)
+        :param password: Password for the admin user
+        :param regDate: Registration date for the admin user
+        :param roleDescription: Description of the role (default is 'Administrador')
+        :return: The created admin user instance
+        """
+        if not username:
+            raise ValueError('El nombre de usuario es obligatorio.')
+        
+        role = Role.get_or_create_role(roleDescription)
+
+        admin = self.model(
+            User=username,
+            registrationDate=regDate,
+            roleID=role,
+            is_staff=True,
+            is_superuser=True
+        )
+
+        admin.set_password(password)
+        admin.save(using=self._db)
+
+        return admin
 
 class Role(models.Model):
-    RoleID = models.AutoField(primary_key=True)
-    Description = models.CharField(max_length=255)
+    roleID = models.AutoField(primary_key=True)
+    description = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'Warranty.Role'
 
     def __str__(self):
-        return self.Description 
+        return self.Description
+
+    @classmethod
+    def get_or_create_role(cls, description):
+        role, _ = cls.objects.get_or_create(Description=description)
+        return role
 
 class WarrantyCustomer(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -26,6 +168,29 @@ class WarrantyCustomer(models.Model):
     def __str__(self):
         return f"{self.FirstName} {self.LastName}"
 
+class Users(AbstractBaseUser, PermissionsMixin):
+    id_user = models.AutoField(primary_key=True)
+    User = models.CharField(max_length=255, unique=True)
+    registrationDate = models.DateField(default=timezone.now)
+    CustomerID = models.ForeignKey('WarrantyCustomer', on_delete=models.CASCADE)
+    roleID = models.ForeignKey('Role', on_delete=models.CASCADE)
+
+    # Required for Django auth
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+
+    objects = CustomUserManager()
+
+    USERNAME_FIELD = 'Users'  # This tells Django to use this field for login
+    REQUIRED_FIELDS = []  # Add any other required fields here
+
+    class Meta:
+        db_table = 'Warranty.Users'
+
+    def __str__(self):
+        return self.Users
+
 class WarrantyStatus(models.Model):
     statusID = models.CharField(max_length=255, primary_key=True)
     description = models.CharField(max_length=255)
@@ -35,21 +200,7 @@ class WarrantyStatus(models.Model):
 
     def __str__(self):
         return self.description
-
-class Users(models.Model):
-    userID = models.AutoField(primary_key=True)
-    Users = models.CharField(max_length=255)
-    Password = models.CharField(max_length=255)
-    registrationDate = models.DateField(default=timezone.now)
-    CustomerID = models.ForeignKey(WarrantyCustomer, on_delete=models.CASCADE)
-    roleID = models.ForeignKey(Role, on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'Warranty.Users'
-
-    def __str__(self):
-        return self.Users
-    
+        
 class Warranty(models.Model):
     NroGarantia = models.AutoField(primary_key=True)
     registerID = models.ForeignKey(Users, on_delete=models.CASCADE)

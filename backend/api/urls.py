@@ -1,15 +1,18 @@
+from .views import *
 from django.urls import path
-from .views import submit_registration, register_warranty, change_password, forgot_password, current_user
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from api.views import healthz
 
 urlpatterns = [
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    """
+    User's paths and endpoints
+    """
+    # User registration
+    path('userRegistration/', SubmitRegistrationView.as_view(), name='user_register'),
+    # User login
+    path('userLogin/', UserLoginView.as_view(), name='user_login'),
+    # User Warranty Registration
+    path('userWarrantyRegistration/', WarrantyRegistrationView.as_view(), name='warranty_register'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('submitRegistration/', submit_registration, name='submit_registration'),
     path('registerWarranty/', register_warranty, name='register_warranty'),
-    path('changePassword/', change_password, name='change_password'),
-    path('forgotPassword/', forgot_password, name='forgot_password'),
-    path('current_user/', current_user, name='current_user'),
     path('healthz/', healthz),
 ]
