@@ -2,9 +2,10 @@ import sys
 import json
 import secrets
 
-from .models import Users, Role, WarrantyCustomer
+from .models import Users, Warranty, WarrantyStatus
 
 from django.conf import settings
+from django.utils import timezone
 from django.core.mail import send_mail
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password, make_password
@@ -173,10 +174,11 @@ class SubmitWarrantyView(APIView):
 
         #   Role check
         if not hasattr(user, 'roleID') or user.roleID.roleName != 'Cliente':
-            return Response({'error': 'Only Clientes can register warranties.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Solo Clientes pueden registrar garantías'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            # ✅ 2. Extract warranty fields
+            #   Extract warranty fields
+            store_name = request.data.get('storeName')
             item_id = int(request.data.get('ItemId'))
             is_retail = request.data.get('isRetail') in ['true', 'True', True]
             purchase_date = request.data.get('purchaseDate')
