@@ -170,6 +170,20 @@ class WarrantyCustomer(models.Model):
         return f"{self.FirstName} {self.LastName}"
 
 class Users(AbstractBaseUser, PermissionsMixin):
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='customuser_groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups'
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='customuser_permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions'
+    )
     id_user = models.AutoField(primary_key=True)
     User = models.CharField(max_length=255, unique=True)
     registrationDate = models.DateField(default=timezone.now)
@@ -296,7 +310,30 @@ class TechnicalService(models.Model):
         db_table = 'Warranty.technicalService'
 
     def __str__(self):
-        return str(self.registerID)   
+        return str(self.registerID)
+    
+    @classmethod
+    def open_case(cls, warranty_id, issue_id, issue_resolution_details, status_id, reception_date=None):
+        """
+        Opens a new technical service case for a specific warranty.
+        """
+        from datetime import date
+        if reception_date is None:
+            reception_date = date.today()
+        try:
+            warranty = Warranty.objects.get(NroGarantia=warranty_id)
+            issue = Issue.objects.get(IssueId=issue_id)
+            status = TechnicalServiceStatus.objects.get(statusID=status_id)
+        except (Warranty.DoesNotExist, Issue.DoesNotExist, TechnicalServiceStatus.DoesNotExist):
+            return None
+        case = cls.objects.create(
+            warrantyID=warranty,
+            issueID=issue,
+            issueResolutionDetails=issue_resolution_details,
+            statusID=status,
+            receptionDate=reception_date
+        )
+        return case
 
 class MainCustomer(models.Model):
     AccountNumber = models.CharField(max_length=20, null=True)

@@ -542,3 +542,35 @@ class TechnicalServicesForgotPasswordView(APIView):
         )
 
         return Response({'message': 'Temporary password sent to your email.'}, status=status.HTTP_200_OK)
+
+class TechnicalServicesWarrantyView(APIView):
+    """
+    API endpoint to get all info of a Warranty given its WarrantyID.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, warranty_id):
+        if not warranty_id:
+            return Response({'message': 'Missing warranty_id parameter'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            warranty = Warranty.objects.get(NroGarantia=warranty_id)
+        except Warranty.DoesNotExist:
+            return Response({'message': 'Warranty not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        result = {
+            'NroGarantia': warranty.NroGarantia,
+            'registerID': warranty.registerID.id_user if hasattr(warranty.registerID, 'id_user') else None,
+            'branchID': warranty.branchID.branchID if hasattr(warranty.branchID, 'branchID') else None,
+            'branchName': warranty.branchID.companyName if hasattr(warranty.branchID, 'companyName') else None,
+            'ItemId': warranty.ItemId,
+            'isRetail': warranty.isRetail,
+            'purchaseDate': warranty.purchaseDate,
+            'registrationDate': warranty.registrationDate,
+            'statusID': warranty.statusID.statusID if hasattr(warranty.statusID, 'statusID') else None,
+            'statusDescription': warranty.statusID.description if hasattr(warranty.statusID, 'description') else None,
+            'productBrand': warranty.productBrand,
+            'productBarcode': warranty.productBarcode,
+            'invoiceCopyPath': warranty.invoiceCopyPath
+        }
+        return Response(result, status=status.HTTP_200_OK)

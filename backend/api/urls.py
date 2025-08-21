@@ -24,6 +24,7 @@ urlpatterns = [
     #   Technical Services Forgot Password
     path('technicalServicesLogin/', TechnicalServicesLoginView.as_view(), name='technical_services_login'),
     path('technicalServicesForgotPassword/', TechnicalServicesForgotPasswordView.as_view(), name='technical_services_forgot_password'),
+    path('technicalServicesWarrantyView/<int:warranty_id>/', TechnicalServicesWarrantyView.as_view(), name='technical_services_warranty_view'),
     
     # Administration paths and endpoints
     #   Get Branch info
