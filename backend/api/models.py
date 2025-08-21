@@ -177,6 +177,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
         help_text='The groups this user belongs to.',
         verbose_name='groups'
     )
+
     user_permissions = models.ManyToManyField(
         'auth.Permission',
         related_name='customuser_permissions',
@@ -184,6 +185,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
         help_text='Specific permissions for this user.',
         verbose_name='user permissions'
     )
+
     id_user = models.AutoField(primary_key=True)
     User = models.CharField(max_length=255, unique=True)
     registrationDate = models.DateField(default=timezone.now)
@@ -297,9 +299,20 @@ class TechnicalServiceStatus(models.Model):
 
     def __str__(self):
         return self.statusDescription
+    
+    @classmethod
+    def create_default_statuses(cls):
+        defaults = [
+            {'statusID': 0, 'statusDescription': 'Abierto'},
+            {'statusID': 1, 'statusDescription': 'En Revision'},
+            {'statusID': 2, 'statusDescription': 'Cerrado'}
+        ]
+        for entry in defaults:
+            cls.objects.get_or_create(statusID=entry['statusID'], defaults={'statusDescription': entry['statusDescription']})
+    
 
 class TechnicalService(models.Model):
-    registerID = models.AutoField(primary_key=True)
+    registerID = models.ForeignKey(Users, on_delete=models.CASCADE)
     warrantyID = models.ForeignKey(Warranty, on_delete=models.CASCADE)
     issueID = models.ForeignKey(Issue, on_delete=models.CASCADE)
     issueResolutionDetails = models.CharField(max_length=255)
@@ -313,9 +326,9 @@ class TechnicalService(models.Model):
         return str(self.registerID)
     
     @classmethod
-    def open_case(cls, warranty_id, issue_id, issue_resolution_details, status_id, reception_date=None):
+    def open_case(cls, warranty_id, issue_id, issue_resolution_details, status_id, register_id, reception_date=None):
         """
-        Opens a new technical service case for a specific warranty.
+        Opens a new technical service case for a specific warranty and user.
         """
         from datetime import date
         if reception_date is None:
@@ -324,13 +337,15 @@ class TechnicalService(models.Model):
             warranty = Warranty.objects.get(NroGarantia=warranty_id)
             issue = Issue.objects.get(IssueId=issue_id)
             status = TechnicalServiceStatus.objects.get(statusID=status_id)
-        except (Warranty.DoesNotExist, Issue.DoesNotExist, TechnicalServiceStatus.DoesNotExist):
+            user = Users.objects.get(id_user=register_id)
+        except (Warranty.DoesNotExist, Issue.DoesNotExist, TechnicalServiceStatus.DoesNotExist, Users.DoesNotExist):
             return None
         case = cls.objects.create(
             warrantyID=warranty,
             issueID=issue,
             issueResolutionDetails=issue_resolution_details,
             statusID=status,
+            registerID=user,
             receptionDate=reception_date
         )
         return case

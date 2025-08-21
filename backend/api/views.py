@@ -19,6 +19,13 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 # Admin API Views
 #   Branch Management
+#       1. Get Branches
+#       2. Create Branch
+#       3. Edit Branch
+#   User Management
+#       1. Get Users
+#       2. Create User
+#       3. Edit User
 class GetBranchAdminView(APIView):
     """
     API endpoint to get all branches and their related MainCustomer info for admin view.
@@ -119,34 +126,6 @@ class EditBranchAdminView(APIView):
         branch.save()
         return Response({'message': 'Branch updated successfully!'}, status=status.HTTP_200_OK)
     
-#   User Management
-class UserEditProfileView(APIView):
-    """
-    API endpoint for users to edit their profile information.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        data = request.data
-        required_fields = ['firstName', 'lastName', 'email', 'address']
-        if not data or not all(field in data and data[field] is not None for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = request.user
-        # Update user fields
-        user.User = data['email']
-        user.email = data['email']
-        # Update related customer info if exists
-        if hasattr(user, 'CustomerID') and user.CustomerID:
-            customer = user.CustomerID
-            customer.FirstName = data['firstName']
-            customer.LastName = data['lastName']
-            customer.Address = data['address']
-            customer.EmailAddress = data['email']
-            customer.save()
-        user.save()
-        return Response({'message': 'Profile updated successfully!'}, status=status.HTTP_200_OK)
-
 class GetUsersAdminView(APIView):
     """
     API endpoint to get all users for admin view.
@@ -236,9 +215,44 @@ class EditUserAdminView(APIView):
             return Response({'message': 'Invalid role description'}, status=status.HTTP_400_BAD_REQUEST)
         user.roleID = role
         user.save()
-        return Response({'message': 'User updated successfully!'}, status=status.HTTP_200_OK)
+        return Response({'message': 'User updated successfully!'}, status=status.HTTP_200_OK)    
 
-#   User API Views
+#   User Management
+#       1. Edit Profile
+#       2. User Registration
+#       3. User Login
+#       4. Get current user info
+#       5. Change Password
+#       6. Forgot Password
+#       7. Warranty Registration
+#       8. Warranty History
+class UserEditProfileView(APIView):
+    """
+    API endpoint for users to edit their profile information.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        required_fields = ['firstName', 'lastName', 'email', 'address']
+        if not data or not all(field in data and data[field] is not None for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        # Update user fields
+        user.User = data['email']
+        user.email = data['email']
+        # Update related customer info if exists
+        if hasattr(user, 'CustomerID') and user.CustomerID:
+            customer = user.CustomerID
+            customer.FirstName = data['firstName']
+            customer.LastName = data['lastName']
+            customer.Address = data['address']
+            customer.EmailAddress = data['email']
+            customer.save()
+        user.save()
+        return Response({'message': 'Profile updated successfully!'}, status=status.HTTP_200_OK)
+
 class SubmitRegistrationView(APIView):
     """
     API endpoint for user registration.
@@ -381,16 +395,6 @@ class ForgotPasswordView(APIView):
 
         return Response({'message': 'Temporary password sent to your email.'}, status=status.HTTP_200_OK)
 
-class GetBranchView(APIView):
-    """
-    API endpoint to get all branches with id, name, and address for select tags.
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        branches = Branch.objects.all().values('branchID', 'companyName', 'address')
-        return Response(list(branches), status=status.HTTP_200_OK)
-
 class SubmitWarrantyView(APIView):
     """
     API endpoint for users to register a new warranty (with file upload).
@@ -476,6 +480,11 @@ class UserWarrantyHistoryView(APIView):
             })
         return Response(result, status=status.HTTP_200_OK)
 
+#   Technical Services Management
+#       1. Technical Services Login
+#       2. Technical Services Forgot Password
+#       3. Technical Services Warranty Info
+#       4. Get Branches for Select Tags
 class TechnicalServicesLoginView(APIView):
     """
     API endpoint for technical services login.
@@ -574,3 +583,13 @@ class TechnicalServicesWarrantyView(APIView):
             'invoiceCopyPath': warranty.invoiceCopyPath
         }
         return Response(result, status=status.HTTP_200_OK)
+    
+class GetBranchView(APIView):
+    """
+    API endpoint to get all branches with id, name, and address for select tags.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        branches = Branch.objects.all().values('branchID', 'companyName', 'address')
+        return Response(list(branches), status=status.HTTP_200_OK)
