@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.db import transaction
+from datetime import date, timedelta
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
@@ -191,6 +192,11 @@ class Users(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.Users
 
+    @classmethod
+    def getUsersAdmin(cls):
+        users = cls.objects.all().values('id_user', 'User', 'password', 'registrationDate', 'CustomerID', 'roleID')
+        return list(users)
+
 class WarrantyStatus(models.Model):
     statusID = models.CharField(max_length=255, primary_key=True)
     description = models.CharField(max_length=255)
@@ -200,10 +206,38 @@ class WarrantyStatus(models.Model):
 
     def __str__(self):
         return self.description
+
+    @classmethod
+    def create_default_statuses(cls, purchaseDate=None):
+        """
+        Creates default statuses and returns the correct status based on purchaseDate.
+        If purchaseDate is less than a year ago, returns 'Válida', else 'Inválida'.
+        """
+        
+        defaults = [
+            {'statusID': 0, 'description': 'Válida'},
+            {'statusID': 1, 'description': 'Inválida'}
+        ]
+        for entry in defaults:
+            cls.objects.get_or_create(statusID=entry['statusID'], defaults={'description': entry['description']})
+
+        if purchaseDate:
+            if isinstance(purchaseDate, str):
+                try:
+                    purchaseDate = date.fromisoformat(purchaseDate)
+                except Exception:
+                    pass
+            today = date.today()
+            if today - purchaseDate < timedelta(days=365):
+                return cls.objects.get(description='Válida')
+            else:
+                return cls.objects.get(description='Inválida')
+        return None
         
 class Warranty(models.Model):
     NroGarantia = models.AutoField(primary_key=True)
     registerID = models.ForeignKey(Users, on_delete=models.CASCADE)
+    branchID = models.ForeignKey('Branch', on_delete=models.CASCADE)
     ItemId = models.IntegerField()
     isRetail = models.BooleanField()
     purchaseDate = models.DateField()
@@ -263,22 +297,6 @@ class TechnicalService(models.Model):
 
     def __str__(self):
         return str(self.registerID)   
-
-class Branch(models.Model):
-    branchID = models.AutoField(primary_key=True)
-    customerID = models.ForeignKey(WarrantyCustomer, on_delete=models.CASCADE)
-    isRetail = models.BooleanField()
-    RIFtype = models.CharField(max_length=255, default='J')
-    RIF = models.IntegerField()
-    companyName = models.CharField(max_length=255)
-    address = models.CharField(max_length=255)
-    branchDescription = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = 'Warranty.Branch'
-
-    def __str__(self):
-        return self.companyName
 
 class MainCustomer(models.Model):
     AccountNumber = models.CharField(max_length=20, null=True)
@@ -352,6 +370,22 @@ class MainCustomer(models.Model):
 
     def __str__(self):
         return f"{self.FirstName} {self.LastName}"
+
+class Branch(models.Model):
+    branchID = models.AutoField(primary_key=True)
+    customerID = models.ForeignKey(MainCustomer, on_delete=models.CASCADE)
+    isRetail = models.BooleanField()
+    RIFtype = models.CharField(max_length=255, default='J')
+    RIF = models.IntegerField()
+    companyName = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    branchDescription = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'Warranty.Branch'
+
+    def __str__(self):
+        return self.companyName
 
 class MainItem(models.Model):
     BinLocation = models.CharField(max_length=20)

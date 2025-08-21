@@ -2,7 +2,7 @@ import sys
 import json
 import secrets
 
-from .models import Users, Warranty, WarrantyStatus
+from .models import *
 
 from django.conf import settings
 from django.utils import timezone
@@ -14,9 +14,231 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-# Create your views here.
+# Admin API Views
+#   Branch Management
+class GetBranchAdminView(APIView):
+    """
+    API endpoint to get all branches and their related MainCustomer info for admin view.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.roleID.description == 'Administrador':
+            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        branches = Branch.objects.select_related('customerID').all()
+        result = []
+        for branch in branches:
+            branch_data = {
+                'branchID': branch.branchID,
+                'isRetail': branch.isRetail,
+                'RIFtype': branch.RIFtype,
+                'RIF': branch.RIF,
+                'companyName': branch.companyName,
+                'address': branch.address,
+                'branchDescription': branch.branchDescription,
+            }
+            customer = branch.customerID
+            customer_data = {
+                'ID': customer.ID,
+                'Company': customer.Company
+            }
+            branch_data['MainCustomer'] = customer_data
+            result.append(branch_data)
+        return Response(result, status=status.HTTP_200_OK)
+
+class CreateBranchAdminView(APIView):
+    """
+    API endpoint for admin to create a new branch.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not request.user.roleID.description == 'Administrador':
+            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data
+        required_fields = ['customerID', 'isRetail', 'RIFtype', 'RIF', 'companyName', 'address', 'branchDescription']
+        if not data or not all(field in data and data[field] is not None for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate customerID exists
+        try:
+            customer = MainCustomer.objects.get(ID=data['customerID'])
+        except MainCustomer.DoesNotExist:
+            return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        branch = Branch.objects.create(
+            customerID=customer,
+            isRetail=data['isRetail'],
+            RIFtype=data['RIFtype'],
+            RIF=data['RIF'],
+            companyName=data['companyName'],
+            address=data['address'],
+            branchDescription=data['branchDescription']
+        )
+        return Response({'message': 'Branch created successfully!', 'branchID': branch.branchID}, status=status.HTTP_201_CREATED)
+
+class EditBranchAdminView(APIView):
+    """
+    API endpoint for admin to edit an existing branch.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not request.user.roleID.description == 'Administrador':
+            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data
+        required_fields = ['branchID', 'customerID', 'isRetail', 'RIFtype', 'RIF', 'companyName', 'address', 'branchDescription']
+        if not data or not all(field in data and data[field] is not None for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate branch exists
+        try:
+            branch = Branch.objects.get(branchID=data['branchID'])
+        except Branch.DoesNotExist:
+            return Response({'message': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate customerID exists
+        try:
+            customer = MainCustomer.objects.get(ID=data['customerID'])
+        except MainCustomer.DoesNotExist:
+            return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        branch.customerID = customer
+        branch.isRetail = data['isRetail']
+        branch.RIFtype = data['RIFtype']
+        branch.RIF = data['RIF']
+        branch.companyName = data['companyName']
+        branch.address = data['address']
+        branch.branchDescription = data['branchDescription']
+        branch.save()
+        return Response({'message': 'Branch updated successfully!'}, status=status.HTTP_200_OK)
+    
+#   User Management
+class UserEditProfileView(APIView):
+    """
+    API endpoint for users to edit their profile information.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        required_fields = ['firstName', 'lastName', 'email', 'address']
+        if not data or not all(field in data and data[field] is not None for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        # Update user fields
+        user.User = data['email']
+        user.email = data['email']
+        # Update related customer info if exists
+        if hasattr(user, 'CustomerID') and user.CustomerID:
+            customer = user.CustomerID
+            customer.FirstName = data['firstName']
+            customer.LastName = data['lastName']
+            customer.Address = data['address']
+            customer.EmailAddress = data['email']
+            customer.save()
+        user.save()
+        return Response({'message': 'Profile updated successfully!'}, status=status.HTTP_200_OK)
+
+class GetUsersAdminView(APIView):
+    """
+    API endpoint to get all users for admin view.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Optionally restrict to admin users only
+        if not request.user.roleID.description == 'Administrador':
+            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        users = Users.getUsersAdmin()
+        return Response(users, status=status.HTTP_200_OK)
+
+class CreateUserAdminView(APIView):
+    """
+    API endpoint for admin to create a new user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Optionally restrict to admin users only
+        if not request.user.roleID.description == 'Administrador':
+            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data
+        required_fields = ['username', 'password', 'customRegDate', 'roleIDDescription']
+
+        if not data or not all(field in data and data[field] for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if user already exists by email
+        if Users.objects.filter(username=data['username']).exists():
+            return Response({'message': 'User with this email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create new user
+        if data['roleIDDescription'] == 'Administrador':
+            role = Users.Role.objects.get(roleName='Administrador')
+            user = Users.objects.create_admin(
+                username=data['username'],
+                password=make_password(data['password']),
+                registrationDate=data['customRegDate'],
+                roleID=role
+            )
+        elif data['roleIDDescription'] == 'Servicio Tecnico':
+            role = Users.Role.objects.get(roleName='Servicio Tecnico')
+            user = Users.objects.create_technical_service(
+                username=data['username'],
+                password=make_password(data['password']),
+                registrationDate=data['customRegDate'],
+                roleID=role
+            )
+        else:
+            return Response({'message': 'Invalid role'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({'message': f"User {data['email']} created successfully!"}, status=status.HTTP_201_CREATED)
+    
+class EditUserAdminView(APIView):
+    """
+    API endpoint for admin to edit an existing user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Only allow admins to edit users
+        if not request.user.roleID.description == 'Administrador':
+            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data
+        required_fields = ['username', 'password', 'customRegDate', 'roleIDDescription']
+
+        if not data or not all(field in data and data[field] for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = Users.objects.get(username=data['username'])
+        except Users.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Update user fields
+        user.set_password(data['password'])
+        user.registrationDate = data['registrationDate']
+        # Find the role by description
+        try:
+            role = Role.objects.get(description=data['roleIDDescription'])
+        except Role.DoesNotExist:
+            return Response({'message': 'Invalid role description'}, status=status.HTTP_400_BAD_REQUEST)
+        user.roleID = role
+        user.save()
+        return Response({'message': 'User updated successfully!'}, status=status.HTTP_200_OK)
+
+#   User API Views
 class SubmitRegistrationView(APIView):
     """
     API endpoint for user registration.
@@ -159,97 +381,164 @@ class ForgotPasswordView(APIView):
 
         return Response({'message': 'Temporary password sent to your email.'}, status=status.HTTP_200_OK)
 
-def healthz(request):
-    print("HEALTHZ Host header:", request.get_host(), file=sys.stderr)
-    return Response({'status': 'ok'}, status=status.HTTP_200_OK)
+class GetBranchView(APIView):
+    """
+    API endpoint to get all branches with id, name, and address for select tags.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        branches = Branch.objects.all().values('branchID', 'companyName', 'address')
+        return Response(list(branches), status=status.HTTP_200_OK)
 
 class SubmitWarrantyView(APIView):
     """
-    API endpoint for user warranty registration.
+    API endpoint for users to register a new warranty (with file upload).
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        data = request.data
+        required_fields = [
+            'branchID', 'purchaseDate', 'invoiceNumber', 'productBrand',
+            'productModel', 'productBarcode', 'invoiceFile'
+        ]
+        if not data or not all(field in data and data[field] is not None for field in required_fields):
+            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate branch exists
+        try:
+            branch = Branch.objects.get(branchID=data['branchID'])
+        except Branch.DoesNotExist:
+            return Response({'message': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Handle file upload
+        invoice_file = request.FILES.get('invoiceFile')
+        if not invoice_file:
+            return Response({'message': 'Invoice file is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save file to media directory (or handle as needed)
+        from django.core.files.storage import default_storage
+        file_path = default_storage.save(f'invoices/{invoice_file.name}', invoice_file)
+
+        # Ensure default statuses exist and get correct status based on purchaseDate
+        status = WarrantyStatus.create_default_statuses(purchaseDate=data['purchaseDate'])
+        if not status:
+            return Response({'message': 'Could not set warranty status'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        warranty = Warranty.objects.create(
+            registerID=request.user,
+            branchID=branch,
+            ItemId=data.get('invoiceNumber'),
+            isRetail=branch.isRetail,
+            purchaseDate=data['purchaseDate'],
+            registrationDate=timezone.now().date(),
+            statusID=status,
+            productBrand=data['productBrand'],
+            productBarcode=data['productBarcode'],
+            invoiceCopyPath=file_path
+        )
+        return Response({'message': 'Warranty registered successfully!', 'NroGarantia': warranty.NroGarantia}, status=status.HTTP_201_CREATED)
+
+class UserWarrantyHistoryView(APIView):
+    """
+    API endpoint to get all warranties registered by a given client (user).
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        user = request.user
-
-        #   Role check
-        if not hasattr(user, 'roleID') or user.roleID.roleName != 'Cliente':
-            return Response({'error': 'Solo Clientes pueden registrar garantías'}, status=status.HTTP_403_FORBIDDEN)
+    def get(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({'message': 'Missing user_id parameter'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            #   Extract warranty fields
-            store_name = request.data.get('storeName')
-            item_id = int(request.data.get('ItemId'))
-            is_retail = request.data.get('isRetail') in ['true', 'True', True]
-            purchase_date = request.data.get('purchaseDate')
-            product_brand = request.data.get('productBrand')
-            product_barcode = int(request.data.get('productBarcode'))
-            invoice_path = request.data.get('invoiceCopyPath')
+            user = Users.objects.get(id_user=user_id)
+        except Users.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            # ✅ 3. Determine status
-            # Example condition: warranty is available if purchase date is within 1 year and invoice is uploaded
-            now = timezone.now().date()
-            purchase_dt = timezone.datetime.strptime(purchase_date, "%Y-%m-%d").date()
-            days_since_purchase = (now - purchase_dt).days
+        warranties = Warranty.objects.filter(registerID=user)
+        result = []
+        for warranty in warranties:
+            result.append({
+                'NroGarantia': warranty.NroGarantia,
+                'branchID': warranty.branchID.branchID,
+                'branchName': warranty.branchID.companyName,
+                'ItemId': warranty.ItemId,
+                'isRetail': warranty.isRetail,
+                'purchaseDate': warranty.purchaseDate,
+                'registrationDate': warranty.registrationDate,
+                'statusID': warranty.statusID.statusID,
+                'statusDescription': warranty.statusID.description,
+                'productBrand': warranty.productBrand,
+                'productBarcode': warranty.productBarcode,
+                'invoiceCopyPath': warranty.invoiceCopyPath
+            })
+        return Response(result, status=status.HTTP_200_OK)
 
-            if days_since_purchase <= 365 and invoice_path:
-                status_code = "available"
-                status_description = "Warranty is valid and invoice provided."
-            else:
-                status_code = "not available"
-                status_description = "Warranty expired or invoice missing."
+class TechnicalServicesLoginView(APIView):
+    """
+    API endpoint for technical services login.
+    """
+    permission_classes = [AllowAny]
 
-            # ✅ 4. Create WarrantyStatus
-            status_obj = WarrantyStatus.objects.create(
-                statusID=status_code,
-                description=status_description
-            )
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            return Response({'message': 'Invalid JSON'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # ✅ 5. Create Warranty
-            warranty = Warranty.objects.create(
-                registerID=user,
-                ItemId=item_id,
-                isRetail=is_retail,
-                purchaseDate=purchase_date,
-                registrationDate=timezone.now(),
-                statusID=status_obj,
-                productBrand=product_brand,
-                productBarcode=product_barcode,
-                invoiceCopyPath=invoice_path
-            )
+        username = data.get('username')
+        password = data.get('password')
 
+        if not username or not password:
+            return Response({'message': 'Missing username or password'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=username, password=password)
+
+        if user is not None and user.roleID.roleName == 'Servicio Tecnico':
+            refresh = RefreshToken.for_user(user)
             return Response({
-                'message': 'Warranty registered.',
-                'warrantyID': warranty.NroGarantia,
-                'status': status_code,
-                'reason': status_description
-            }, status=status.HTTP_201_CREATED)
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'userID': user.userID,
+                    'username': user.Users,
+                    'role': user.roleID.Description,
+                    'is_staff': user.is_staff,
+                }
+            }, status=status.HTTP_200_OK)
+    
+class TechnicalServicesForgotPasswordView(APIView):
+    """
+    API endpoint for technical services to reset their password.
+    """
+    permission_classes = [AllowAny]
 
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        data = request.data
+        email = data.get('email')
 
+        if not email:
+            return Response({'message': 'Missing email'}, status=status.HTTP_400_BAD_REQUEST)
 
-@csrf_exempt
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def register_warranty(request):
-    try:
-        data = json.loads(request.body)
-    except Exception:
-        return JsonResponse({'message': 'Invalid JSON'}, status=400)
-    required_fields = ['username', 'product', 'serial_number', 'purchase_date']
-    if not data or not all(field in data and data[field] for field in required_fields):
-        return JsonResponse({'message': 'Missing required warranty fields'}, status=400)
-    try:
-        user = User.objects.get(username=data['username'])
-    except User.DoesNotExist:
-        return JsonResponse({'message': 'User does not exist'}, status=404)
-    warranty = Warranty.objects.create(
-        user=user,
-        product=data['product'],
-        serial_number=data['serial_number'],
-        purchase_date=data['purchase_date']
-    )
-    return JsonResponse({'message': 'Warranty registered successfully!'}, status=201)
+        try:
+            user = Users.objects.get(email=email, roleID__roleName='Servicio Tecnico')
+        except Users.DoesNotExist:
+            return Response({'message': 'No user with this email'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Generate a temporary password
+        temp_password = secrets.token_urlsafe(8)
+        user.password = make_password(temp_password)
+        user.save()
 
+        # Send email with the temporary password
+        send_mail(
+            'Password Reset',
+            f'Your temporary password is: {temp_password}',
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=True,
+        )
+
+        return Response({'message': 'Temporary password sent to your email.'}, status=status.HTTP_200_OK)
