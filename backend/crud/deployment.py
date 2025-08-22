@@ -12,6 +12,10 @@ ALLOWED_HOSTS = [
     os.environ.get('CUSTOM_HOST_NAME')
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    os.environ.get('VITE_FRONT_API_URL')
+]
+
 CORS_ALLOWED_ORIGINS = [
     # URL del frontend REACT
     os.environ.get('VITE_FRONT_API_URL'),

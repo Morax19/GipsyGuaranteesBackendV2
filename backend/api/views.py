@@ -3,7 +3,15 @@ import json
 import pyodbc
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
-from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
+from rest_framework.decorators import api_view
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+# CSRF Logic
+@api_view(['GET'])
+@ensure_csrf_cookie
+def getCSRF(request):
+    return JsonResponse({'csrfToken': get_token(request)})
 
 # Admin Views
 #   1. Get All Users
@@ -98,8 +106,10 @@ def adminGetCustomers(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-@csrf_exempt
 def adminCreateUser(request):
+    print("Header token:", request.headers.get('X-CSRFToken'))
+    print("Cookie token:", request.COOKIES.get('csrftoken'))
+
     if request.method == 'POST':
         connection = None
         cursor = None
