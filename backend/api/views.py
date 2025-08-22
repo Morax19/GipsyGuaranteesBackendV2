@@ -1,595 +1,210 @@
-import sys
+import os
 import json
-import secrets
+import pyodbc
+from django.http import JsonResponse
+from json.decoder import JSONDecodeError
+from django.views.decorators.csrf import csrf_exempt
 
-from .models import *
-
-from django.conf import settings
-from django.utils import timezone
-from django.core.mail import send_mail
-from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import check_password, make_password
-
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated, AllowAny
-
-# Admin API Views
-#   Branch Management
-#       1. Get Branches
-#       2. Create Branch
-#       3. Edit Branch
-#   User Management
-#       1. Get Users
-#       2. Create User
-#       3. Edit User
-class GetBranchAdminView(APIView):
-    """
-    API endpoint to get all branches and their related MainCustomer info for admin view.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        if not request.user.roleID.description == 'Administrador':
-            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-        branches = Branch.objects.select_related('customerID').all()
-        result = []
-        for branch in branches:
-            branch_data = {
-                'branchID': branch.branchID,
-                'isRetail': branch.isRetail,
-                'RIFtype': branch.RIFtype,
-                'RIF': branch.RIF,
-                'companyName': branch.companyName,
-                'address': branch.address,
-                'branchDescription': branch.branchDescription,
-            }
-            customer = branch.customerID
-            customer_data = {
-                'ID': customer.ID,
-                'Company': customer.Company
-            }
-            branch_data['MainCustomer'] = customer_data
-            result.append(branch_data)
-        return Response(result, status=status.HTTP_200_OK)
-
-class CreateBranchAdminView(APIView):
-    """
-    API endpoint for admin to create a new branch.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        if not request.user.roleID.description == 'Administrador':
-            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-        data = request.data
-        required_fields = ['customerID', 'isRetail', 'RIFtype', 'RIF', 'companyName', 'address', 'branchDescription']
-        if not data or not all(field in data and data[field] is not None for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate customerID exists
+# Admin Views
+#   1. Get All Users
+#   2. Get All Branches
+#   3. Get All Customers
+#   4. Create User
+#   5. Edit User
+def adminGetUsers(request):
+    if request.method == 'GET':
+        connection = None  # Initialize variables to None
+        cursor = None
         try:
-            customer = MainCustomer.objects.get(ID=data['customerID'])
-        except MainCustomer.DoesNotExist:
-            return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+            # Correct f-string syntax
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+            sql = "SELECT U.userID, U.Users, U.Password, U.registrationDate, U.CustomerID, R.Description FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID"
+            cursor.execute(sql)
+            users = cursor.fetchall()
+            user_list = [dict(zip([column[0] for column in cursor.description], row)) for row in users]
+            return JsonResponse(user_list, safe=False)
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-        branch = Branch.objects.create(
-            customerID=customer,
-            isRetail=data['isRetail'],
-            RIFtype=data['RIFtype'],
-            RIF=data['RIF'],
-            companyName=data['companyName'],
-            address=data['address'],
-            branchDescription=data['branchDescription']
-        )
-        return Response({'message': 'Branch created successfully!', 'branchID': branch.branchID}, status=status.HTTP_201_CREATED)
-
-class EditBranchAdminView(APIView):
-    """
-    API endpoint for admin to edit an existing branch.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        if not request.user.roleID.description == 'Administrador':
-            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-        data = request.data
-        required_fields = ['branchID', 'customerID', 'isRetail', 'RIFtype', 'RIF', 'companyName', 'address', 'branchDescription']
-        if not data or not all(field in data and data[field] is not None for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate branch exists
+def adminGetBranches(request):
+    if request.method == 'GET':
+        connection = None  # Initialize variables to None
+        cursor = None
         try:
-            branch = Branch.objects.get(branchID=data['branchID'])
-        except Branch.DoesNotExist:
-            return Response({'message': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+            # Correct f-string syntax
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+            sql = "SELECT B.branchID, B.customerID, B.isRetail, B.RIFtype, B.RIF, B.companyName, B.address, B.branchDescription FROM Warranty.Branch B"
+            cursor.execute(sql)
+            branches = cursor.fetchall()
+            branch_list = [dict(zip([column[0] for column in cursor.description], row)) for row in branches]
+            return JsonResponse(branch_list, safe=False)
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-        # Validate customerID exists
+def adminGetCustomers(request):
+    if request.method == 'GET':
+        connection = None  # Initialize variables to None
+        cursor = None
         try:
-            customer = MainCustomer.objects.get(ID=data['customerID'])
-        except MainCustomer.DoesNotExist:
-            return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+            # Correct f-string syntax
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+            sql = "SELECT C.ID, C.FirstName + '' + C.LastName AS FullName FROM Warranty.Customer C"
+            cursor.execute(sql)
+            customers = cursor.fetchall()
+            customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
+            return JsonResponse(customer_list, safe=False)
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-        branch.customerID = customer
-        branch.isRetail = data['isRetail']
-        branch.RIFtype = data['RIFtype']
-        branch.RIF = data['RIF']
-        branch.companyName = data['companyName']
-        branch.address = data['address']
-        branch.branchDescription = data['branchDescription']
-        branch.save()
-        return Response({'message': 'Branch updated successfully!'}, status=status.HTTP_200_OK)
-    
-class GetUsersAdminView(APIView):
-    """
-    API endpoint to get all users for admin view.
-    """
-    permission_classes = [IsAuthenticated]
+@csrf_exempt
+def adminCreateUser(request):
+    if request.method == 'POST':
+        connection = None
+        cursor = None
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            
+            User = data.get('User')
+            Password = data.get('Password')
+            customerID = data.get('customerID')
+            roleID = data.get('roleID')
 
-    def get(self, request):
-        # Optionally restrict to admin users only
-        if not request.user.roleID.description == 'Administrador':
-            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            if not all([User, Password, roleID, customerID]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-        users = Users.getUsersAdmin()
-        return Response(users, status=status.HTTP_200_OK)
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
 
-class CreateUserAdminView(APIView):
-    """
-    API endpoint for admin to create a new user.
-    """
-    permission_classes = [IsAuthenticated]
+            # Check if username already exists
+            cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (User,))
+            if cursor.fetchone()[0] > 0:
+                return JsonResponse({'error': 'Username already exists'}, status=400)
 
-    def post(self, request):
-        # Optionally restrict to admin users only
-        if not request.user.roleID.description == 'Administrador':
-            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            # Get roleID from role description
+            cursor.execute("SELECT RoleID FROM Warranty.Role WHERE Description = ?", (roleID,))
+            role_row = cursor.fetchone()
+            if not role_row:
+                return JsonResponse({'error': 'Invalid role'}, status=400)
+            roleID = role_row[0]
 
-        data = request.data
-        required_fields = ['username', 'password', 'customRegDate', 'roleIDDescription']
+            sql = """
+                INSERT INTO Warranty.Users (Users, Password, registrationDate, CustomerID, roleID)
+                VALUES (?, ?, GETDATE(), ?, ?)
+            """
+            cursor.execute(sql, (User, Password, customerID, roleID))
+            connection.commit()
 
-        if not data or not all(field in data and data[field] for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if user already exists by email
-        if Users.objects.filter(username=data['username']).exists():
-            return Response({'message': 'User with this email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Create new user
-        if data['roleIDDescription'] == 'Administrador':
-            role = Users.Role.objects.get(roleName='Administrador')
-            user = Users.objects.create_admin(
-                username=data['username'],
-                password=make_password(data['password']),
-                registrationDate=data['customRegDate'],
-                roleID=role
-            )
-        elif data['roleIDDescription'] == 'Servicio Tecnico':
-            role = Users.Role.objects.get(roleName='Servicio Tecnico')
-            user = Users.objects.create_technical_service(
-                username=data['username'],
-                password=make_password(data['password']),
-                registrationDate=data['customRegDate'],
-                roleID=role
-            )
-        else:
-            return Response({'message': 'Invalid role'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'message': 'User created successfully'}, status=201)
         
-        return Response({'message': f"User {data['email']} created successfully!"}, status=status.HTTP_201_CREATED)
-    
-class EditUserAdminView(APIView):
-    """
-    API endpoint for admin to edit an existing user.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        # Only allow admins to edit users
-        if not request.user.roleID.description == 'Administrador':
-            return Response({'message': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-        data = request.data
-        required_fields = ['username', 'password', 'customRegDate', 'roleIDDescription']
-
-        if not data or not all(field in data and data[field] for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = Users.objects.get(username=data['username'])
-        except Users.DoesNotExist:
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Update user fields
-        user.set_password(data['password'])
-        user.registrationDate = data['registrationDate']
-        # Find the role by description
-        try:
-            role = Role.objects.get(description=data['roleIDDescription'])
-        except Role.DoesNotExist:
-            return Response({'message': 'Invalid role description'}, status=status.HTTP_400_BAD_REQUEST)
-        user.roleID = role
-        user.save()
-        return Response({'message': 'User updated successfully!'}, status=status.HTTP_200_OK)    
-
-#   User Management
-#       1. Edit Profile
-#       2. User Registration
-#       3. User Login
-#       4. Get current user info
-#       5. Change Password
-#       6. Forgot Password
-#       7. Warranty Registration
-#       8. Warranty History
-class UserEditProfileView(APIView):
-    """
-    API endpoint for users to edit their profile information.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        data = request.data
-        required_fields = ['firstName', 'lastName', 'email', 'address']
-        if not data or not all(field in data and data[field] is not None for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = request.user
-        # Update user fields
-        user.User = data['email']
-        user.email = data['email']
-        # Update related customer info if exists
-        if hasattr(user, 'CustomerID') and user.CustomerID:
-            customer = user.CustomerID
-            customer.FirstName = data['firstName']
-            customer.LastName = data['lastName']
-            customer.Address = data['address']
-            customer.EmailAddress = data['email']
-            customer.save()
-        user.save()
-        return Response({'message': 'Profile updated successfully!'}, status=status.HTTP_200_OK)
-
-class SubmitRegistrationView(APIView):
-    """
-    API endpoint for user registration.
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request): 
-        data = request.data
-        required_fields = ['firstName', 'lastName', 'email', 'password']
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
         
-        if not data or not all(field in data and data[field] for field in required_fields):
-            return Response({'message': 'Missing required registration fields'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Check if user already exists by email
-        if Users.objects.filter(email=data['email']).exists():
-            return Response({'message': 'User with this email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-        # Create new user
-        user = Users.objects.create_customer(
-            firstName=data['firstName'],
-            lastName=data['lastName'],
-            email=data['email'],
-            password=make_password(data['password']),
-            address=data.get('address'),
-            phone=data.get('phone'),
-            zip_code=data.get('zip_code')
-        )
-
-        return Response({'message': f"User {data['email']} registered successfully!"}, status=status.HTTP_201_CREATED)
-
-class UserLoginView(APIView):
-    """
-    API endpoint for user login.
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request):
+def adminEditUser(request):
+    if request.method == 'POST':
         try:
             data = json.loads(request.body)
-        except Exception:
-            return Response({'message': 'Invalid JSON'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        username = data.get('username')
-        password = data.get('password')
+            userID = data.get('userID')
+            User = data.get('User')
+            Password = data.get('Password')
+            customerID = data.get('customerID')
+            roleID = data.get('roleID')
 
-        if not username or not password:
-            return Response({'message': 'Missing username or password'}, status=status.HTTP_400_BAD_REQUEST)
+            if not all([userID, User, Password, roleID, customerID]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-        user = authenticate(username=username, password=password)
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
 
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-                'user': {
-                    'userID': user.userID,
-                    'username': user.Users,
-                    'role': user.roleID.Description,
-                    'is_staff': user.is_staff,
-                }
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            # Check if username already exists
+            cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ? AND userID != ?", (User, userID))
+            if cursor.fetchone()[0] > 0:
+                return JsonResponse({'error': 'Username already exists'}, status=400)
 
-class CurrentUserView(APIView):
-    """
-    Returns the authenticated user's information
-    """
-    permission_classes = [IsAuthenticated]
+            # Get roleID from role description
+            cursor.execute("SELECT RoleID FROM Warranty.Role WHERE Description = ?", (roleID,))
+            role_row = cursor.fetchone()
+            if not role_row:
+                return JsonResponse({'error': 'Invalid role'}, status=400)
+            roleID = role_row[0]
 
-    def get(self, request):
-        user = request.user
+            sql = """
+                UPDATE Warranty.Users
+                SET Users = ?, Password = ?, CustomerID = ?, roleID = ?
+                WHERE userID = ?
+            """
+            cursor.execute(sql, (User, Password, customerID, roleID, userID))
+            connection.commit()
 
-        user_info = {
-            "username": user.username,
-            "firstName": user.first_name,
-            "lastName": user.last_name,
-            "email": user.email,
-            "is_staff": user.is_staff,
-            "is_superuser": user.is_superuser,
-        }
-
-        return Response(user_info, status=status.HTTP_200_OK)
-
-class ChangePasswordView(APIView):
-    """
-    API endpoint for users to change their password
-    """
-    def post(self, request):
-        user = request.user
-        data = request.data
-
-        current_password = data.get('oldPassword')
-        new_password = data.get('newPassword')
-
-        if not current_password or not new_password:
-            return Response({'message': 'Missing oldPassword or newPassword'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not check_password(current_password, user.password):
-            return Response({'message': 'Old password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if current_password == new_password:
-            return Response({'message': 'New password cannot be the same as the old password'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.password = make_password(new_password)
-        user.save()
-
-        return Response({'message': 'Password changed successfully!'}, status=status.HTTP_200_OK)
-
-class ForgotPasswordView(APIView):
-    """
-    API endpoint for users to reset their password
-    """
-    def post(self, request):
-        data = request.data
-        email = data.get('email')
-
-        if not email:
-            return Response({'message': 'Missing email'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = Users.objects.get(email=email)
-        except Users.DoesNotExist:
-            return Response({'message': 'No user with this email'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Generate a temporary password
-        temp_password = secrets.token_urlsafe(8)
-        user.password = make_password(temp_password)
-        user.save()
-
-        # Send email with the temporary password
-        send_mail(
-            'Password Reset',
-            f'Your temporary password is: {temp_password}',
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=True,
-        )
-
-        return Response({'message': 'Temporary password sent to your email.'}, status=status.HTTP_200_OK)
-
-class SubmitWarrantyView(APIView):
-    """
-    API endpoint for users to register a new warranty (with file upload).
-    """
-    permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
-
-    def post(self, request):
-        data = request.data
-        required_fields = [
-            'branchID', 'purchaseDate', 'invoiceNumber', 'productBrand',
-            'productModel', 'productBarcode', 'invoiceFile'
-        ]
-        if not data or not all(field in data and data[field] is not None for field in required_fields):
-            return Response({'message': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate branch exists
-        try:
-            branch = Branch.objects.get(branchID=data['branchID'])
-        except Branch.DoesNotExist:
-            return Response({'message': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Handle file upload
-        invoice_file = request.FILES.get('invoiceFile')
-        if not invoice_file:
-            return Response({'message': 'Invoice file is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Save file to media directory (or handle as needed)
-        from django.core.files.storage import default_storage
-        file_path = default_storage.save(f'invoices/{invoice_file.name}', invoice_file)
-
-        # Ensure default statuses exist and get correct status based on purchaseDate
-        status = WarrantyStatus.create_default_statuses(purchaseDate=data['purchaseDate'])
-        if not status:
-            return Response({'message': 'Could not set warranty status'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        warranty = Warranty.objects.create(
-            registerID=request.user,
-            branchID=branch,
-            ItemId=data.get('invoiceNumber'),
-            isRetail=branch.isRetail,
-            purchaseDate=data['purchaseDate'],
-            registrationDate=timezone.now().date(),
-            statusID=status,
-            productBrand=data['productBrand'],
-            productBarcode=data['productBarcode'],
-            invoiceCopyPath=file_path
-        )
-        return Response({'message': 'Warranty registered successfully!', 'NroGarantia': warranty.NroGarantia}, status=status.HTTP_201_CREATED)
-
-class UserWarrantyHistoryView(APIView):
-    """
-    API endpoint to get all warranties registered by a given client (user).
-    """
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response({'message': 'Missing user_id parameter'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = Users.objects.get(id_user=user_id)
-        except Users.DoesNotExist:
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        warranties = Warranty.objects.filter(registerID=user)
-        result = []
-        for warranty in warranties:
-            result.append({
-                'NroGarantia': warranty.NroGarantia,
-                'branchID': warranty.branchID.branchID,
-                'branchName': warranty.branchID.companyName,
-                'ItemId': warranty.ItemId,
-                'isRetail': warranty.isRetail,
-                'purchaseDate': warranty.purchaseDate,
-                'registrationDate': warranty.registrationDate,
-                'statusID': warranty.statusID.statusID,
-                'statusDescription': warranty.statusID.description,
-                'productBrand': warranty.productBrand,
-                'productBarcode': warranty.productBarcode,
-                'invoiceCopyPath': warranty.invoiceCopyPath
-            })
-        return Response(result, status=status.HTTP_200_OK)
-
-#   Technical Services Management
-#       1. Technical Services Login
-#       2. Technical Services Forgot Password
-#       3. Technical Services Warranty Info
-#       4. Get Branches for Select Tags
-class TechnicalServicesLoginView(APIView):
-    """
-    API endpoint for technical services login.
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        try:
-            data = json.loads(request.body)
-        except Exception:
-            return Response({'message': 'Invalid JSON'}, status=status.HTTP_400_BAD_REQUEST)
-
-        username = data.get('username')
-        password = data.get('password')
-
-        if not username or not password:
-            return Response({'message': 'Missing username or password'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = authenticate(username=username, password=password)
-
-        if user is not None and user.roleID.roleName == 'Servicio Tecnico':
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-                'user': {
-                    'userID': user.userID,
-                    'username': user.Users,
-                    'role': user.roleID.Description,
-                    'is_staff': user.is_staff,
-                }
-            }, status=status.HTTP_200_OK)
-    
-class TechnicalServicesForgotPasswordView(APIView):
-    """
-    API endpoint for technical services to reset their password.
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        data = request.data
-        email = data.get('email')
-
-        if not email:
-            return Response({'message': 'Missing email'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = Users.objects.get(email=email, roleID__roleName='Servicio Tecnico')
-        except Users.DoesNotExist:
-            return Response({'message': 'No user with this email'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Generate a temporary password
-        temp_password = secrets.token_urlsafe(8)
-        user.password = make_password(temp_password)
-        user.save()
-
-        # Send email with the temporary password
-        send_mail(
-            'Password Reset',
-            f'Your temporary password is: {temp_password}',
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=True,
-        )
-
-        return Response({'message': 'Temporary password sent to your email.'}, status=status.HTTP_200_OK)
-
-class TechnicalServicesWarrantyView(APIView):
-    """
-    API endpoint to get all info of a Warranty given its WarrantyID.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, warranty_id):
-        if not warranty_id:
-            return Response({'message': 'Missing warranty_id parameter'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            warranty = Warranty.objects.get(NroGarantia=warranty_id)
-        except Warranty.DoesNotExist:
-            return Response({'message': 'Warranty not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        result = {
-            'NroGarantia': warranty.NroGarantia,
-            'registerID': warranty.registerID.id_user if hasattr(warranty.registerID, 'id_user') else None,
-            'branchID': warranty.branchID.branchID if hasattr(warranty.branchID, 'branchID') else None,
-            'branchName': warranty.branchID.companyName if hasattr(warranty.branchID, 'companyName') else None,
-            'ItemId': warranty.ItemId,
-            'isRetail': warranty.isRetail,
-            'purchaseDate': warranty.purchaseDate,
-            'registrationDate': warranty.registrationDate,
-            'statusID': warranty.statusID.statusID if hasattr(warranty.statusID, 'statusID') else None,
-            'statusDescription': warranty.statusID.description if hasattr(warranty.statusID, 'description') else None,
-            'productBrand': warranty.productBrand,
-            'productBarcode': warranty.productBarcode,
-            'invoiceCopyPath': warranty.invoiceCopyPath
-        }
-        return Response(result, status=status.HTTP_200_OK)
-    
-class GetBranchView(APIView):
-    """
-    API endpoint to get all branches with id, name, and address for select tags.
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        branches = Branch.objects.all().values('branchID', 'companyName', 'address')
-        return Response(list(branches), status=status.HTTP_200_OK)
+            return JsonResponse({'message': 'User updated successfully'}, status=200)
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)

@@ -3,7 +3,7 @@ from .settings import *
 from .settings import BASE_DIR
 import sys
 
-#DEBUG = False
+DEBUG = False
 
 SECRET_KEY = os.environ.get('MY_SECRET_KEY')
 
