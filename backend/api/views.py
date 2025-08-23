@@ -1,6 +1,8 @@
 import os
 import json
+import bcrypt
 import pyodbc
+from datetime import datetime
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
 from django.middleware.csrf import get_token
@@ -360,56 +362,96 @@ def userRegister(request):
     if request.method == 'POST':
         connection = None
         cursor = None
+        
         try:
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
                 return JsonResponse({'error': 'Invalid JSON'}, status=400)
             
-            User = data.get('User')
-            Password = data.get('Password')
-            customerID = data.get('customerID')
-            roleID = data.get('roleID')
-
-            if not all([User, Password, roleID, customerID]):
+            # Mandatory fields
+            first_name = data.get('FirstName')
+            last_name = data.get('LastName')
+            email_address = data.get('EmailAddress')
+            password = data.get('Password')
+            
+            if not all([first_name, last_name, email_address, password]):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+            # Optional fields
+            address = data.get('Address')
+            zip_code = data.get('Zip')
+            phone_number = data.get('PhoneNumber')
+            
+            # Hash the password before storing it
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            # Establish database connection
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
             cursor = connection.cursor()
 
-            # Check if username already exists
-            cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (User,))
+            # Check if the user already exists within a transaction
+            cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Username already exists'}, status=400)
+                return JsonResponse({'error': 'User with this email already exists'}, status=400)
 
-            # Get roleID from role description
-            cursor.execute("SELECT RoleID FROM Warranty.Role WHERE Description = ?", (roleID,))
-            role_row = cursor.fetchone()
-            if not role_row:
-                return JsonResponse({'error': 'Invalid role'}, status=400)
-            roleID = role_row[0]
+            # Begin a transaction for atomic insertion
+            connection.autocommit = False # Ensure we are in a transaction
 
-            sql = """
-                INSERT INTO Warranty.Users (Users, Password, registrationDate, CustomerID, roleID)
-                VALUES (?, ?, GETDATE(), ?, ?)
+            # Insert into the Customer table and get the new CustomerID
+            customer_sql = """
+                INSERT INTO Warranty.Customer (FirstName, LastName, Address, Zip, EmailAddress, PhoneNumber)
+                OUTPUT INSERTED.ID
+                VALUES (?, ?, ?, ?, ?, ?);
             """
-            cursor.execute(sql, (User, Password, customerID, roleID))
+            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number))
+            
+            customer_id = cursor.fetchval()
+
+            if customer_id:
+                print(customer_id)
+            else:
+                # This block will execute if SCOPE_IDENTITY() returns NULL
+                raise ValueError("Failed to retrieve new CustomerID after insertion. Check your Customer table's IDENTITY column.")
+
+            # Insert into the Users table
+            user_sql = """
+                INSERT INTO Warranty.Users (Users, Password, registrationDate, CustomerID, roleID)
+                VALUES (?, ?, GETDATE(), ?, 3);
+            """
+            cursor.execute(user_sql, (email_address, hashed_password, customer_id))
+
+            # Commit the transaction if all operations were successful
             connection.commit()
 
             return JsonResponse({'message': 'User created successfully'}, status=201)
         
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': 'A database error occurred'}, status=500)
+            
         except Exception as e:
+            # Catch all other exceptions and rollback
             print(f"Error: {e}")
+            if connection:
+                connection.rollback()
             return JsonResponse({'error': str(e)}, status=500)
-        
+            
         finally:
+            # Always close the cursor and connection
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
+                
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
