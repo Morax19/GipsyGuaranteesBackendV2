@@ -1,7 +1,9 @@
 import os
+import jwt
 import json
 import pyodbc
-from datetime import datetime
+import datetime
+from .utils import jwt_required
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
 from django.middleware.csrf import get_token
@@ -239,6 +241,7 @@ def userEdit(request):
 #       4. Get All Customers
 #       5. Get All Main.Customers
 #       6. Admin Login
+#@jwt_required
 def adminGetRoles(request):
     if request.method == 'GET':
         connection = None  # Initialize variables to None
@@ -421,7 +424,7 @@ def adminLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description 
+                SELECT U.Password, R.Description, U.userID
                 FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID
                 WHERE U.Users = ?;
             """
@@ -435,8 +438,9 @@ def adminLogin(request):
 
             stored_password = user_data[0]
             user_role = user_data[1]
+            user_id = user_data[2]
 
-            # Verify the password using bcrypt.checkpw()
+            # Verify the password
             if not password == stored_password:
                 return JsonResponse({'error': 'Invalid username or password'}, status=401)
 
@@ -445,7 +449,16 @@ def adminLogin(request):
                 return JsonResponse({'error': 'Unauthorized access'}, status=403)
             
             # You would generate and return a session token or JWT here
-            return JsonResponse({'message': 'Login successful', 'role': user_role}, status=200)
+            jwt_secret = os.environ.get("JWT_SECRET_KEY")
+
+            payload = {
+                'user_id': user_id,
+                'role': user_role,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            }
+
+            token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            return JsonResponse({'message': 'Login successful', 'access_token': token}, status=200)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -480,7 +493,14 @@ def adminCreateBranch(request):
             address = data.get('address')
             branchDescription = data.get('branchDescription')
 
-            if not all([customerID, isRetail, RIFtype, RIF, companyName, address, branchDescription]):
+            
+            if not isRetail:
+                isRetail = 0
+            print(customerID)
+            print(isRetail)
+
+            if customerID is None or not all([RIFtype, RIF, companyName, address, branchDescription]):
+                print("Hola aqui fields")
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -493,6 +513,7 @@ def adminCreateBranch(request):
             # Check if branch already exists
             cursor.execute("SELECT COUNT(*) FROM Warranty.Branch WHERE Branch.RIF = ?", (RIF,))
             if cursor.fetchone()[0] > 0:
+                print("hola aqui branch")
                 return JsonResponse({'error': 'Branch already exists'}, status=400)
 
             sql = """
@@ -518,20 +539,21 @@ def adminCreateBranch(request):
 
 @csrf_exempt
 def adminEditBranch(request):
-    if request.method == 'POST':
+    if request.method == 'PUT':
         try:
             data = json.loads(request.body)
             
             branchID = data.get('branchID')
             customerID = data.get('customerID')
-            isRetail = data.get('isRetail')
             RIFtype = data.get('RIFtype')
+            isRetail = data.get('isRetail')
             RIF = data.get('RIF')
             companyName = data.get('companyName')
             address = data.get('address')
             branchDescription = data.get('branchDescription')
 
-            if not all([branchID, customerID, isRetail, RIFtype, RIF, companyName, address, branchDescription]):
+            print(isRetail)
+            if customerID is None or not all([branchID, RIFtype, RIF, companyName, address, branchDescription]):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -540,11 +562,6 @@ def adminEditBranch(request):
                                         f'UID={os.environ["DB_USER"]};'
                                         f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
-
-            # Check if username already exists
-            cursor.execute("SELECT COUNT(*) FROM Warranty.Branch WHERE Branch.branchID = ? AND Branch.RIF = ?", (branchID, RIF))
-            if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Username already exists'}, status=400)
 
             sql = """
                 UPDATE Warranty.Branch
@@ -565,10 +582,8 @@ def adminEditBranch(request):
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
-    
 
-# User Views
-#   1. Login
+#   Cliente Login
 @csrf_exempt
 def userLogin(request):
     if request.method == 'POST':
@@ -599,7 +614,7 @@ def userLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description 
+                SELECT U.Password, R.Description, U.userID 
                 FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID
                 WHERE U.Users = ?;
             """
@@ -613,8 +628,9 @@ def userLogin(request):
 
             stored_password = user_data[0]
             user_role = user_data[1]
+            user_id = user_data[2]
 
-            # Verify the password using bcrypt.checkpw()
+            # Verify the password
             if not password == stored_password:
                 return JsonResponse({'error': 'Invalid username or password'}, status=401)
 
@@ -623,7 +639,16 @@ def userLogin(request):
                 return JsonResponse({'error': 'Unauthorized access'}, status=403)
             
             # You would generate and return a session token or JWT here
-            return JsonResponse({'message': 'Login successful', 'role': user_role}, status=200)
+            jwt_secret = os.environ.get("JWT_SECRET_KEY")
+
+            payload = {
+                'user_id': user_id,
+                'role': user_role,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            }
+
+            token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            return JsonResponse({'message': 'Login successful', 'access_token': token}, status=200)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -668,7 +693,7 @@ def technicalServiceLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description 
+                SELECT U.Password, R.Description, U.userID
                 FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID
                 WHERE U.Users = ?;
             """
@@ -682,8 +707,9 @@ def technicalServiceLogin(request):
 
             stored_password = user_data[0]
             user_role = user_data[1]
+            user_id = user_data[2]
 
-            # Verify the password using bcrypt.checkpw()
+            # Verify the password
             if not password == stored_password:
                 return JsonResponse({'error': 'Invalid username or password'}, status=401)
 
@@ -692,7 +718,16 @@ def technicalServiceLogin(request):
                 return JsonResponse({'error': 'Unauthorized access'}, status=403)
             
             # You would generate and return a session token or JWT here
-            return JsonResponse({'message': 'Login successful', 'role': user_role}, status=200)
+            jwt_secret = os.environ.get("JWT_SECRET_KEY")
+
+            payload = {
+                'user_id': user_id,
+                'role': user_role,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            }
+
+            token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            return JsonResponse({'message': 'Login successful', 'access_token': token}, status=200)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -704,3 +739,8 @@ def technicalServiceLogin(request):
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+#   Warranty Registration
+@csrf_exempt
+def warrantyRegister(request):
+    return

@@ -1,11 +1,5 @@
 from .views import *
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-# CSRF Test
-@ensure_csrf_cookie
-def test_csrf(request):
-    return JsonResponse({'csrfToken': get_token(request)})
 
 urlpatterns = [
     # General endpoints
@@ -22,6 +16,7 @@ urlpatterns = [
     #   User get Branches info
     #   User Warranty Registration
     path('userLogin/', userLogin, name='user_login'),
+    path('warrantyRegister/', warrantyRegister, name='warranty_register'),
     
 
     # Technical Services paths and endpoints
@@ -48,7 +43,4 @@ urlpatterns = [
     path('adminEditBranch/', adminEditBranch, name='admin_edit_branch'),
     path('adminGetMainCustomers/', adminGetMainCustomers, name='admin_get_MainCustomers'),
     path('adminGetRoles/', adminGetRoles, name='admin_get_roles'),
-
-    # Token management
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
