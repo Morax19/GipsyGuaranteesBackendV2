@@ -44,7 +44,7 @@ def userRegister(request):
             address = data.get('Address')
             zip_code = data.get('Zip')
             phone_number = data.get('PhoneNumber')
-            role_id = data.get('RoleID')
+            role_id = data.get('roleID')
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -61,13 +61,10 @@ def userRegister(request):
             if cursor.fetchone()[0] > 0:
                 return JsonResponse({'error': 'User with this email already exists'}, status=400)
 
+            print(role_id)
             if not role_id:
                 # Registro de usuario cliente
                 role_id = 3  # Assuming '3' is the roleID for 'Cliente'
-            else:
-                # Get roleID from role description
-                cursor.execute("SELECT RoleID FROM Warranty.Role WHERE Description = ?", (role_id,))
-                role_id = cursor.fetchval()
 
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
@@ -172,10 +169,6 @@ def userEdit(request):
             
             customer_id = user_info[0]
             current_email = user_info[1]
-
-            # Only check for email existence if the email is being changed
-            print(email_address)
-            print(current_email)
 
             if email_address.lower() != current_email.lower():
                 cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
@@ -329,8 +322,12 @@ def adminGetBranches(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-def adminGetCustomers(request):
+def adminGetCustomerByID(request):
     if request.method == 'GET':
+        customer_id = request.GET.get('customerID')
+        if not customer_id:
+            return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
+        
         connection = None  # Initialize variables to None
         cursor = None
         try:
@@ -341,11 +338,20 @@ def adminGetCustomers(request):
                                         f'UID={os.environ["DB_USER"]};'
                                         f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
-            sql = "SELECT C.ID, C.FirstName + '' + C.LastName AS FullName FROM Warranty.Customer C"
-            cursor.execute(sql)
-            customers = cursor.fetchall()
-            customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
-            return JsonResponse(customer_list, safe=False)
+            sql = """
+                SELECT C.ID, C.FirstName, C.LastName, C.EmailAddress, C.PhoneNumber, C.Address, C.Zip
+                FROM Warranty.Customer C
+                WHERE C.ID = ?
+            """
+            cursor.execute(sql, customer_id)
+            customer = cursor.fetchone()
+
+            if customer:
+                customer_dict = dict(zip([column[0] for column in cursor.description], customer))
+                return JsonResponse(customer_dict, safe=False)
+            else:
+                return JsonResponse({'error': 'Customer not found'}, status=404)
+            
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
@@ -493,14 +499,10 @@ def adminCreateBranch(request):
             address = data.get('address')
             branchDescription = data.get('branchDescription')
 
-            
             if not isRetail:
                 isRetail = 0
-            print(customerID)
-            print(isRetail)
 
             if customerID is None or not all([RIFtype, RIF, companyName, address, branchDescription]):
-                print("Hola aqui fields")
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -513,7 +515,6 @@ def adminCreateBranch(request):
             # Check if branch already exists
             cursor.execute("SELECT COUNT(*) FROM Warranty.Branch WHERE Branch.RIF = ?", (RIF,))
             if cursor.fetchone()[0] > 0:
-                print("hola aqui branch")
                 return JsonResponse({'error': 'Branch already exists'}, status=400)
 
             sql = """
@@ -552,7 +553,9 @@ def adminEditBranch(request):
             address = data.get('address')
             branchDescription = data.get('branchDescription')
 
-            print(isRetail)
+            if not isRetail:
+                isRetail = 0
+
             if customerID is None or not all([branchID, RIFtype, RIF, companyName, address, branchDescription]):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
