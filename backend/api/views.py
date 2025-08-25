@@ -106,6 +106,52 @@ def adminGetBranches(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @jwt_required
+def getBranchByCustomerID(request):
+    if request.method == 'GET':
+        customer_id = request.GET.get('customerID')
+        isRetail = request.GET.get('isRetail')
+
+        if not customer_id:
+            return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
+        if not isRetail:
+            return JsonResponse({'error': 'Missing isRetail parameter'}, status=400)
+
+        connection = None
+        cursor = None
+
+        try:
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT B.branchID, B.companyName, B.address
+                FROM Warranty.Branch B
+                WHERE B.customerID = ? AND B.isRetail = ?
+                ORDER BY B.companyName
+            """
+            cursor.execute(sql, (customer_id, isRetail))
+
+            branchesByID = cursor.fetchall()
+            branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
+            return JsonResponse(branchesByIDList, safe=False)
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        
+
+@jwt_required
 def adminGetCustomerByID(request):
     if request.method == 'GET':
         customer_id = request.GET.get('customerID')

@@ -17,6 +17,7 @@ from .views import (
     adminGetCustomerByID,
     adminGetMainCustomers,
     adminGetRoles,
+    getBranchByCustomerID,
 )
 
 
@@ -69,4 +70,5 @@ urlpatterns = [
     path('adminGetCustomerByID/', adminGetCustomerByID, name='admin_get_customer_by_id'),
     path('adminGetMainCustomers/', adminGetMainCustomers, name='admin_get_MainCustomers'),
     path('adminGetRoles/', adminGetRoles, name='admin_get_roles'),
+    path('getBranchByCustomerID/', getBranchByCustomerID, name='get_branch_by_customer_id'),
 ]
