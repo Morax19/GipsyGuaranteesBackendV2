@@ -13,5 +13,4 @@ pyodbc==5.2.0
 python-dotenv==1.1.1
 pytz==2025.2
 sqlparse==0.5.3
-uuid==1.30
 whitenoise==6.9.0
