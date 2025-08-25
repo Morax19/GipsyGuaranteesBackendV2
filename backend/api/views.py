@@ -302,6 +302,8 @@ def adminLogin(request):
             }
 
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            if not jwt_secret:
+                return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
             
             return JsonResponse({
                 'message': 'Login successful',
@@ -689,6 +691,8 @@ def technicalServiceLogin(request):
             
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
+            if not jwt_secret:
+                return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
 
             payload = {
                 'user_id': user_id,
@@ -778,7 +782,9 @@ def userLogin(request):
             
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
-
+            if not jwt_secret:
+                return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
+            
             payload = {
                 'user_id': user_id,
                 'email_address': email_address,
