@@ -16,10 +16,17 @@ def jwt_required(f):
         try:
             payload = jwt.decode(token, jwt_secret, algorithms=['HS256'])
             request.user_id = payload['user_id']
-            request.user_role = payload['role']
+            # Assuming you have a role in the token, as per your login view
+            if 'role' in payload:
+                request.user_role = payload['role'] 
         except jwt.ExpiredSignatureError:
             return JsonResponse({'error': 'Token has expired'}, status=401)
         except jwt.InvalidTokenError:
             return JsonResponse({'error': 'Invalid token'}, status=401)
+        except KeyError as e:
+            # Handle cases where a key like 'user_id' is missing from the payload
+            return JsonResponse({'error': f'Invalid token payload: missing {e}'}, status=401)
 
-        return f(request, *args, **kwargs)
+        return f(request, *args, **kwargs) # <--- This line is critical!
+
+    return decorated_function # <--- This line is also critical!

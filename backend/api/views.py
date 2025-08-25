@@ -6,9 +6,7 @@ import datetime
 from .utils import jwt_required
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
-from django.middleware.csrf import get_token
-from rest_framework.decorators import api_view
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
 
 # General use Views
 #   Get Roles
@@ -16,6 +14,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 #   Get Branches
 #   Get CustomerByID
 #   Get Main.Customers (With Warranty.Inventory)
+
+@jwt_required
 def adminGetRoles(request):
     if request.method == 'GET':
         connection = None  # Initialize variables to None
@@ -45,6 +45,7 @@ def adminGetRoles(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@jwt_required
 def adminGetUsers(request):
     if request.method == 'GET':
         connection = None  # Initialize variables to None
@@ -74,6 +75,7 @@ def adminGetUsers(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@jwt_required
 def adminGetBranches(request):
     if request.method == 'GET':
         connection = None  # Initialize variables to None
@@ -103,6 +105,7 @@ def adminGetBranches(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@jwt_required
 def adminGetCustomerByID(request):
     if request.method == 'GET':
         customer_id = request.GET.get('customerID')
@@ -145,6 +148,7 @@ def adminGetCustomerByID(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@jwt_required
 def adminGetMainCustomers(request):
     if request.method == 'GET':
         connection = None  # Initialize variables to None
@@ -246,12 +250,17 @@ def adminLogin(request):
 
             payload = {
                 'user_id': user_id,
+                'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=3)
             }
 
-            token = jwt.encode(payload, jwt_secret, algorithm='HS256')
-            return JsonResponse({'message': 'Login successful', 'access_token': token}, status=200)
+            access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            
+            return JsonResponse({
+                'message': 'Login successful',
+                'access_token': access_token
+                }, status=200)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -265,6 +274,7 @@ def adminLogin(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @csrf_exempt
+@jwt_required
 def adminCreateUsers(request):
     if request.method == 'POST':
         connection = None
@@ -356,6 +366,7 @@ def adminCreateUsers(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
             
 @csrf_exempt
+@jwt_required
 def adminEditUsers(request):
     if request.method == 'PUT':
         connection = None
@@ -467,6 +478,7 @@ def adminEditUsers(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @csrf_exempt
+@jwt_required
 def adminCreateBranch(request):
     if request.method == 'POST':
         connection = None
@@ -525,6 +537,7 @@ def adminCreateBranch(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @csrf_exempt
+@jwt_required
 def adminEditBranch(request):
     if request.method == 'PUT':
         try:
@@ -625,7 +638,7 @@ def technicalServiceLogin(request):
                 return JsonResponse({'error': 'Invalid username or password'}, status=401)
 
             # Check if the user has the correct role for this login path
-            if user_role != 'Servicio Técnico':
+            if user_role != 'Servicio Técnico' and user_role != 'Administrador':
                 return JsonResponse({'error': 'Unauthorized access'}, status=403)
             
             # You would generate and return a session token or JWT here
@@ -633,12 +646,17 @@ def technicalServiceLogin(request):
 
             payload = {
                 'user_id': user_id,
+                'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=3)
             }
 
-            token = jwt.encode(payload, jwt_secret, algorithm='HS256')
-            return JsonResponse({'message': 'Login successful', 'access_token': token}, status=200)
+            access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            
+            return JsonResponse({
+                'message': 'Login successful',
+                'access_token': access_token
+                }, status=200)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -709,7 +727,7 @@ def userLogin(request):
                 return JsonResponse({'error': 'Invalid username or password'}, status=401)
 
             # Check if the user has the correct role for this login path
-            if user_role != 'Cliente':
+            if user_role != 'Cliente' and user_role != 'Administrador':
                 return JsonResponse({'error': 'Unauthorized access'}, status=403)
             
             # You would generate and return a session token or JWT here
@@ -717,12 +735,17 @@ def userLogin(request):
 
             payload = {
                 'user_id': user_id,
+                'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=3)
             }
 
-            token = jwt.encode(payload, jwt_secret, algorithm='HS256')
-            return JsonResponse({'message': 'Login successful', 'access_token': token}, status=200)
+            access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            
+            return JsonResponse({
+                'message': 'Login successful',
+                'access_token': access_token
+                }, status=200)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -826,14 +849,17 @@ def publicRegister(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @csrf_exempt
-def WarrantyRegister(request):
+@jwt_required
+def warrantyRegister(request):
     return JsonResponse({'message': 'Not implemented yet'}, status=501)
 
 @csrf_exempt
-def WarrantyHistory(request):
+@jwt_required
+def warrantyHistory(request):
     return
     
 @csrf_exempt
+@jwt_required
 def userProfileEdit(request):
     if request.method == 'PUT':
         connection = None
@@ -945,5 +971,6 @@ def userProfileEdit(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @csrf_exempt
+@jwt_required
 def userChangePassword(request):
     return
