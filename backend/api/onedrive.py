@@ -37,4 +37,5 @@ def get_onedrive_headers():
     else:
         print(f"Token error: {result['error']}")
         print("Error details:", result.get("error_description", "No additional details"))
+        print("Correlation ID:", result.get("correlation_id"))
         raise Exception("No se pudo obtener el token de acceso")

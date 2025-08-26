@@ -2,11 +2,67 @@ import os
 import jwt
 import json
 import pyodbc
+import requests
 import datetime
 from .utils import jwt_required
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
+from .onedrive import get_onedrive_headers
 from django.views.decorators.csrf import csrf_exempt
+
+# Conexión a OneDrive
+def get_onedriveProofsOfPayments(invoiceEntries):
+    headers = get_onedrive_headers()
+    folder_path = "/GARANTIAS/Facturas"
+    updated_entries = []
+    
+    for invoice in invoiceEntries:
+        if entry[7]:
+            filename = entry[7].split('/')[-1]
+            file_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:{folder_path}/{filename}"
+
+            try:
+                response = requests.get(file_url, headers=headers)
+                if response.status_code == 200:
+                    file_data = response.json()
+                    
+                    file_id = file_data['id']
+
+                    # Generación de enlace de compartición
+                    share_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
+                    share_data = {
+                        "type": "view",
+                        "scope": "anonymous"
+                    }
+                    share_response = requests.post(share_url, headers=headers, json=share_data)
+
+                    updated_entry = list(entry)
+                    if share_response.status_code == 200:
+                        shared_link = share_response.json()["link"]["webUrl"]
+                        updated_entry[7] = {
+                            'url': shared_link,
+                            'name': filename,
+                            'error': False,
+                            'email_url': f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/content"
+                        }
+                    else:
+                        shared_link = file_data.get('webUrl')
+                        updated_entry[7] = {
+                            'url': shared_link,
+                            'name': filename,
+                            'error': True,
+                            'email_url': f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/content"
+                        }
+
+                    updated_entries.append(tuple(updated_entry))
+                
+                else:
+                    updated_entries.append(entry)
+            
+            except Exception as e:
+                updated_entries.append(entry)
+    
+    return updated_entries
 
 # General use Views
 #   Get Roles
@@ -1309,23 +1365,18 @@ def warrantyRegister(request):
         cursor = None
 
         try:
-            try:
-                data = json.loads(request.body)
-            except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
-
             # Mandatory fields
-            register_id = data.get('registerID')
-            branch_id = data.get('branchID')
-            item_id = data.get('ItemId')
-            is_retail = data.get('isRetail')
-            purchase_date = data.get('purchaseDate')
+            register_id = request.POST['registerID']
+            branch_id = request.POST['branchID']
+            item_id = request.POST['ItemId']
+            is_retail = request.POST['isRetail']
+            purchase_date = request.POST['purchaseDate']
             status_id = 1
-            product_brand = data.get('productBrand')
-            product_barcode = data.get('productBarcode')
-            invoice_copy_path = ''
+            product_brand = request.POST['productBrand']
+            product_barcode = request.POST['productBarcode']
+            invoice_img = request.FILES['invoiceIMG']
             used_count = 0
-            invoice_number = data.get('invoiceNumber')
+            invoice_number = request.POST['invoiceNumber']
 
             if not all([
                 register_id,
@@ -1336,9 +1387,26 @@ def warrantyRegister(request):
                 status_id,
                 product_brand,
                 product_barcode,
+                invoice_img,
                 invoice_number
             ]):
                 return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+
+            # Almacenamiento de facturas en OneDrive
+            headers = get_onedrive_headers()
+            ext = invoice_img.name.split('.')[-1]
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            safe_name = invoice_img.name.replace(" ", "_").replace("/", "_")
+            unique_name = f"{timestamp}_{safe_name}"
+            folder_path = "/GARANTIAS/Facturas"
+            upload_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:/{folder_path}/{unique_name}:/content"
+            
+            resp = requests.put(upload_url, headers=headers, data=invoice_img.read())
+            if resp.status_code not in (200, 201):
+                return JsonResponse({'error': 'Error al subir la factura a OneDrive', 'details': resp.text}, status=500)
+
+            data = resp.json()
+            invoice_copy_path = data["webUrl"]
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -1350,9 +1418,9 @@ def warrantyRegister(request):
             cursor = connection.cursor()
 
             # Check if the warranty already exists by invoiceNumber
-            cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ?", (invoice_number))
+            cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ? AND ItemId = ?", (invoice_number, item_id))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Ya existe una garantía asociada a esta factura'}, status=400)
+                return JsonResponse({'error': 'Ya existe una garantía para este producto asociada a esta factura'}, status=400)
 
             sql = """
                 INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
