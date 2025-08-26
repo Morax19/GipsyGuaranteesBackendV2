@@ -16,7 +16,7 @@ def get_onedriveProofsOfPayments(invoiceEntries):
     folder_path = "/GARANTIAS/Facturas"
     updated_entries = []
     
-    for invoice in invoiceEntries:
+    for entry in invoiceEntries:
         if entry[7]:
             filename = entry[7].split('/')[-1]
             file_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:{folder_path}/{filename}"
