@@ -5,6 +5,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.', '.env'))
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+MEDIA_URL = 'media/'
+
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+
 DEBUG = True
 
 SECRET_KEY = os.environ.get('MY_SECRET_KEY')

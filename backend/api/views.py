@@ -111,6 +111,8 @@ def getBranchByCustomerID(request):
         customer_id = request.GET.get('customerID')
         isRetail = request.GET.get('isRetail')
 
+        print(f"customerID: {customer_id}")
+        print(f"isRetail: {isRetail}")
         if not customer_id:
             return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
         if not isRetail:
@@ -149,7 +151,161 @@ def getBranchByCustomerID(request):
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@jwt_required
+def getProductByBarCode(request):
+    if request.method == 'GET':
+        barCode = request.GET.get('barCode')
+
+        if not barCode:
+            return JsonResponse({'error': 'Missing barCode parameter'}, status=400)
+
+        connection = None
+        cursor = None
+
+        try:
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT I.ID, I.CategoryID, I.SubDescription3 AS Brand, C.Name AS Category
+                FROM Main.Item I
+                JOIN Main.Category C ON C.ID = I.CategoryID AND C.isRetail = I.isRetail
+                WHERE I.isRetail = 1 AND I.ItemLookupCode = ?
+            """
+            cursor.execute(sql, barCode)
+
+            item = cursor.fetchone()
+
+            if item:
+                item_dict = dict(zip([column[0] for column in cursor.description], item))
+                return JsonResponse(item_dict, safe=False)
+            else:
+                return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+            
+        except Exception as e:
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+@jwt_required
+def getBranchByCustomerID(request):
+    if request.method == 'GET':
+        customer_id = request.GET.get('mainCustomerID')
+        isRetail = request.GET.get('isRetail')
+
+        if not customer_id:
+            return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
+        if not isRetail:
+            return JsonResponse({'error': 'Missing isRetail parameter'}, status=400)
+
+        connection = None
+        cursor = None
+
+        try:
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT B.branchID, B.companyName, B.address, B.RIFtype, B.RIF
+                FROM Warranty.Branch B
+                WHERE B.customerID = ? AND B.isRetail = ?
+                ORDER BY B.companyName
+            """
+            cursor.execute(sql, (customer_id, isRetail))
+
+            branchesByID = cursor.fetchall()
+            branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
+            return JsonResponse(branchesByIDList, safe=False)
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@jwt_required
+def getCustomerByUserID(request):
+    if request.method == 'GET':
+        user_id = request.GET.get('userID')
+        if not user_id:
+            return JsonResponse({'error': 'Missing userID parameter'}, status=400)
         
+        connection = None  # Initialize variables to None
+        cursor = None
+        try:
+            # Correct f-string syntax
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            connection.autocommit = False
+
+            sql = """
+                SELECT U.CustomerID
+                FROM Warranty.Users U
+                WHERE U.userID = ?
+            """
+            cursor.execute(sql, user_id)
+            customer_id = cursor.fetchval()
+
+            if not customer_id:
+                return JsonResponse({'error': 'User not found'}, status=404)
+
+            sql = """
+                SELECT C.ID, C.FirstName, C.LastName, C.Address, C.Zip, C.EmailAddress, C.PhoneNumber
+                FROM Warranty.Customer C
+                WHERE C.ID = ?
+            """
+            cursor.execute(sql, customer_id)
+            customer = cursor.fetchone()
+
+            connection.commit()
+            if customer:
+                customer_dict = dict(zip([column[0] for column in cursor.description], customer))
+                return JsonResponse(customer_dict, safe=False)
+            else:
+                return JsonResponse({'error': 'Customer not found'}, status=404)
+        
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': 'A database error occurred'}, status=500)    
+        
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @jwt_required
 def adminGetCustomerByID(request):
@@ -228,7 +384,43 @@ def adminGetMainCustomers(request):
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
-
+    
+@jwt_required
+def adminGetMainCustomersRetail(request):
+    if request.method == 'GET':
+        connection = None  # Initialize variables to None
+        cursor = None
+        try:
+            # Correct f-string syntax
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+            sql = """
+                SELECT DISTINCT(C.ID), C.FirstName + '' + C.LastName AS FullName, C.isRetail
+                FROM Main.Customer C
+                JOIN Warranty.Inventory I ON C.ID = I.customerID
+                WHERE C.isRetail = 0
+                ORDER BY FullName
+            """
+            cursor.execute(sql)
+            customers = cursor.fetchall()
+            customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
+            return JsonResponse(customer_list, safe=False)
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
 # Admin Views
 #   1. Login
 #   2. Create Users
@@ -903,12 +1095,129 @@ def publicRegister(request):
 @csrf_exempt
 @jwt_required
 def warrantyRegister(request):
-    return JsonResponse({'message': 'Not implemented yet'}, status=501)
+    if request.method == 'POST':
+        connection = None
+        cursor = None
 
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+            # Mandatory fields
+            register_id = data.get('registerID')
+            branch_id = data.get('branchID')
+            item_id = data.get('ItemId')
+            is_retail = data.get('isRetail')
+            purchase_date = data.get('purchaseDate')
+            status_id = 1
+            product_brand = data.get('productBrand')
+            product_barcode = data.get('productBarcode')
+            invoice_copy_path = ''
+            used_count = 0
+            invoice_number = data.get('invoiceNumber')
+
+            if not all([
+                register_id,
+                branch_id,
+                item_id,
+                is_retail,
+                purchase_date,
+                status_id,
+                product_brand,
+                product_barcode,
+                invoice_number
+            ]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            # Check if the warranty already exists by invoiceNumber
+            cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ?", (invoice_number))
+            if cursor.fetchone()[0] > 0:
+                return JsonResponse({'error': 'Ya existe una garantía asociada a esta factura'}, status=400)
+
+            sql = """
+                INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
+                VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
+            """
+            cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
+            connection.commit()
+
+            return JsonResponse({'message': 'Garantía registrada éxitosamente'}, status=201)
+        
+        except pyodbc.Error as db_error:
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(db_error)}, status=500)
+
+        except Exception as e:
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
 @csrf_exempt
 @jwt_required
 def warrantyHistory(request):
-    return
+    if request.method == 'GET':
+        connection = None
+        cursor = None
+
+        user_id = request.GET.get('userID')
+
+        try:
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            # Fetch warranty history
+            cursor.execute("SELECT * FROM Warranty.warranty WHERE registerID = ?", (user_id,))
+            warranties = cursor.fetchall()
+            warranties_list = [dict(zip([column[0] for column in cursor.description], row)) for row in warranties]
+            return JsonResponse(warranties_list, safe=False)
+
+        except pyodbc.Error as db_error:
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+
+        except Exception as e:
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
     
 @csrf_exempt
 @jwt_required
@@ -929,16 +1238,14 @@ def userProfileEdit(request):
             first_name = data.get('FirstName')
             last_name = data.get('LastName')
             email_address = data.get('EmailAddress')
-            role_id = data.get('roleID')
             
-            if not all([user_id, first_name, last_name, email_address, role_id]):
+            if not all([user_id, first_name, last_name, email_address]):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
             
             # Optional fields
             address = data.get('Address')
             zip_code = data.get('Zip')
             phone_number = data.get('PhoneNumber')
-            password = data.get('Password')
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -960,9 +1267,6 @@ def userProfileEdit(request):
             if not user_info:
                 return JsonResponse({'error': 'User not found'}, status=404)
             
-            if role_id not in ['1', '2', '3']:
-                return JsonResponse({'error': 'Invalid role'}, status=400)
-            
             customer_id = user_info[0]
             current_email = user_info[1]
 
@@ -979,21 +1283,12 @@ def userProfileEdit(request):
             """
             cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, customer_id))
 
-            # Update the Users table (conditionally update password)
-            if password:
-                user_sql = """
-                    UPDATE Warranty.Users
-                    SET Users = ?, Password = ?, roleID = ?
-                    WHERE userID = ?
-                """
-                cursor.execute(user_sql, (email_address, password, role_id, user_id))
-            else:
-                user_sql = """
-                    UPDATE Warranty.Users
-                    SET Users = ?, roleID = ?
-                    WHERE userID = ?
-                """
-                cursor.execute(user_sql, (email_address, role_id, user_id))
+            user_sql = """
+                UPDATE Warranty.Users
+                SET Users = ?
+                WHERE userID = ?
+            """
+            cursor.execute(user_sql, (email_address, user_id))
             
             # Commit the transaction if all operations were successful
             connection.commit()
@@ -1025,4 +1320,67 @@ def userProfileEdit(request):
 @csrf_exempt
 @jwt_required
 def userChangePassword(request):
-    return
+    if request.method == 'PUT':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+            # Mandatory fields check
+            user_id = data.get('userID')
+            current_password = data.get('old_password')
+            new_password = data.get('new_password')
+
+            if not all([user_id, current_password, new_password]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            cursor.execute("SELECT U.Password FROM Warranty.Users U WHERE U.userID = ?", (user_id,))
+            actual_password = cursor.fetchval()
+
+            if current_password != actual_password:
+                return JsonResponse({'error': 'Contraseña actual incorrecta'}, status=400)
+
+            sql = """
+                UPDATE Warranty.Users
+                SET Password = ?
+                WHERE userID = ?
+            """
+            cursor.execute(sql, (new_password, user_id))
+            connection.commit()
+
+            return JsonResponse({'message': 'Contraseña actualizada con éxito'}, status=200)
+
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': 'A database error occurred'}, status=500)
+
+        except Exception as e:
+            # Catch all other exceptions and rollback
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+                
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)

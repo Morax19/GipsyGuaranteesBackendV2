@@ -18,6 +18,9 @@ from .views import (
     adminGetMainCustomers,
     adminGetRoles,
     getBranchByCustomerID,
+    adminGetMainCustomersRetail,
+    getProductByBarCode,
+    getCustomerByUserID,
 )
 
 
@@ -36,7 +39,7 @@ urlpatterns = [
     path('publicRegister/', publicRegister, name='user_register'),
     path('warrantyRegister/', warrantyRegister, name='warranty_register'),
     path('warrantyHistory/', warrantyHistory, name='warranty_history'),
-    path('userProfileEdit', userProfileEdit, name='user_profile_edit'),
+    path('userProfileEdit/', userProfileEdit, name='user_profile_edit'),
     path('userChangePassword/', userChangePassword, name='user_change_password'),    
 
     # Technical Services paths and endpoints
@@ -68,7 +71,10 @@ urlpatterns = [
     path('adminGetUsers/', adminGetUsers, name='admin_get_users'),
     path('adminGetBranches/', adminGetBranches, name='admin_get_branches'),
     path('adminGetCustomerByID/', adminGetCustomerByID, name='admin_get_customer_by_id'),
+    path('getCustomerByUserID/', getCustomerByUserID, name='get_customer_by_user_id'),
     path('adminGetMainCustomers/', adminGetMainCustomers, name='admin_get_MainCustomers'),
+    path('adminGetMainCustomersRetail/', adminGetMainCustomersRetail, name='admin_get_MainCustomers_retail'),
     path('adminGetRoles/', adminGetRoles, name='admin_get_roles'),
     path('getBranchByCustomerID/', getBranchByCustomerID, name='get_branch_by_customer_id'),
+    path('getProductByBarCode/', getProductByBarCode, name='get_product_by_barCode'),
 ]
