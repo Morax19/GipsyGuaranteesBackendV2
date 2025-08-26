@@ -111,12 +111,10 @@ def getBranchByCustomerID(request):
         customer_id = request.GET.get('customerID')
         isRetail = request.GET.get('isRetail')
 
-        print(f"customerID: {customer_id}")
-        print(f"isRetail: {isRetail}")
         if not customer_id:
-            return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
+            return JsonResponse({'error': 'Se querie el parámetro customerID'}, status=400)
         if not isRetail:
-            return JsonResponse({'error': 'Missing isRetail parameter'}, status=400)
+            return JsonResponse({'error': 'Se querie el parámetro isRetail'}, status=400)
 
         connection = None
         cursor = None
@@ -203,9 +201,9 @@ def getBranchByCustomerID(request):
         isRetail = request.GET.get('isRetail')
 
         if not customer_id:
-            return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
+            return JsonResponse({'error': 'Se querie el parámetro customerID'}, status=400)
         if not isRetail:
-            return JsonResponse({'error': 'Missing isRetail parameter'}, status=400)
+            return JsonResponse({'error': 'Se querie el parámetro isRetail'}, status=400)
 
         connection = None
         cursor = None
@@ -270,7 +268,7 @@ def getCustomerByUserID(request):
             customer_id = cursor.fetchval()
 
             if not customer_id:
-                return JsonResponse({'error': 'User not found'}, status=404)
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
 
             sql = """
                 SELECT C.ID, C.FirstName, C.LastName, C.Address, C.Zip, C.EmailAddress, C.PhoneNumber
@@ -312,7 +310,7 @@ def adminGetCustomerByID(request):
     if request.method == 'GET':
         customer_id = request.GET.get('customerID')
         if not customer_id:
-            return JsonResponse({'error': 'Missing customerID parameter'}, status=400)
+            return JsonResponse({'error': 'Se querie el parámetro customerID'}, status=400)
         
         connection = None  # Initialize variables to None
         cursor = None
@@ -438,14 +436,14 @@ def adminLogin(request):
                 data = json.loads(request.body)
             except JSONDecodeError:
                 print("Wrong JSON")
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             email_address = data.get('EmailAddress')
             password = data.get('Password')
 
             if not all([email_address, password]):
                 print("Missing fields")
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -469,7 +467,7 @@ def adminLogin(request):
             # Check if user exists and if the password is correct
             if not user_data:
                 # Use a generic error message to prevent username enumeration
-                return JsonResponse({'error': 'Invalid username or password'}, status=401)
+                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
 
             stored_password = user_data[0]
             user_role = user_data[1]
@@ -477,11 +475,11 @@ def adminLogin(request):
 
             # Verify the password
             if not password == stored_password:
-                return JsonResponse({'error': 'Invalid username or password'}, status=401)
+                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
 
             # Check if the user has the correct role for this login path
             if user_role != 'Administrador':
-                return JsonResponse({'error': 'Unauthorized access'}, status=403)
+                return JsonResponse({'error': 'Acceso no autorizado'}, status=403)
             
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
@@ -498,7 +496,7 @@ def adminLogin(request):
                 return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
             
             return JsonResponse({
-                'message': 'Login successful',
+                'message': 'Inicio de sesión éxitoso',
                 'access_token': access_token
                 }, status=200)
 
@@ -525,7 +523,7 @@ def adminCreateUsers(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
 
             # Mandatory fields
             first_name = data.get('FirstName')
@@ -535,7 +533,7 @@ def adminCreateUsers(request):
             role_id = data.get('roleID')
             
             if not all([first_name, last_name, email_address, password, role_id]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -555,7 +553,7 @@ def adminCreateUsers(request):
             # Check if the user already exists within a transaction
             cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'User with this email already exists'}, status=400)
+                return JsonResponse({'error': 'Ya existe un usuario asociado a este correo electrónico'}, status=400)
 
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
@@ -580,7 +578,7 @@ def adminCreateUsers(request):
             # Commit the transaction if all operations were successful
             connection.commit()
 
-            return JsonResponse({'message': 'User created successfully'}, status=201)
+            return JsonResponse({'message': 'Usuario registrado éxitosamente'}, status=201)
         
         except pyodbc.Error as db_error:
             # Handle database-specific errors and rollback
@@ -617,7 +615,7 @@ def adminEditUsers(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             # Mandatory fields check
             user_id = data.get('userID')
@@ -627,7 +625,7 @@ def adminEditUsers(request):
             role_id = data.get('roleID')
             
             if not all([user_id, first_name, last_name, email_address, role_id]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -653,7 +651,7 @@ def adminEditUsers(request):
             user_info = cursor.fetchone()
 
             if not user_info:
-                return JsonResponse({'error': 'User not found'}, status=404)
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
             
             if role_id not in ['1', '2', '3']:
                 return JsonResponse({'error': 'Invalid role'}, status=400)
@@ -664,7 +662,7 @@ def adminEditUsers(request):
             if email_address.lower() != current_email.lower():
                 cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
                 if cursor.fetchone()[0] > 0:
-                    return JsonResponse({'error': 'Email address is already in use by another user'}, status=400)
+                    return JsonResponse({'error': 'Este correo electrónico ya se encuentra asociado a un usuario'}, status=400)
             
             # Update the Customer table
             customer_sql = """
@@ -693,7 +691,7 @@ def adminEditUsers(request):
             # Commit the transaction if all operations were successful
             connection.commit()
 
-            return JsonResponse({'message': 'User updated successfully'}, status=200)
+            return JsonResponse({'message': 'Información del usuario editada con éxito'}, status=200)
         
         except pyodbc.Error as db_error:
             # Handle database-specific errors and rollback
@@ -727,7 +725,7 @@ def adminCreateBranch(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             customerID = data.get('customerID')
             isRetail = data.get('isRetail')
@@ -741,7 +739,7 @@ def adminCreateBranch(request):
                 isRetail = 0
 
             if customerID is None or not all([RIFtype, RIF, companyName, address, branchDescription]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
                                         f'Server={os.environ["DB_SERVER"]};'
@@ -796,7 +794,7 @@ def adminEditBranch(request):
                 isRetail = 0
 
             if customerID is None or not all([branchID, RIFtype, RIF, companyName, address, branchDescription]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
                                         f'Server={os.environ["DB_SERVER"]};'
@@ -837,13 +835,13 @@ def technicalServiceLogin(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             email_address = data.get('EmailAddress')
             password = data.get('Password')
 
             if not all([email_address, password]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -867,7 +865,7 @@ def technicalServiceLogin(request):
             # Check if user exists and if the password is correct
             if not user_data:
                 # Use a generic error message to prevent username enumeration
-                return JsonResponse({'error': 'Invalid username or password'}, status=401)
+                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
 
             stored_password = user_data[0]
             user_role = user_data[1]
@@ -875,11 +873,11 @@ def technicalServiceLogin(request):
 
             # Verify the password
             if not password == stored_password:
-                return JsonResponse({'error': 'Invalid username or password'}, status=401)
+                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
 
             # Check if the user has the correct role for this login path
             if user_role != 'Servicio Técnico' and user_role != 'Administrador':
-                return JsonResponse({'error': 'Unauthorized access'}, status=403)
+                return JsonResponse({'error': 'Acceso no autorizado'}, status=403)
             
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
@@ -896,7 +894,7 @@ def technicalServiceLogin(request):
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
             
             return JsonResponse({
-                'message': 'Login successful',
+                'message': 'Inicio de sesión éxitoso',
                 'access_token': access_token
                 }, status=200)
 
@@ -910,6 +908,134 @@ def technicalServiceLogin(request):
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@jwt_required
+def technicalServiceGetWarrantyByID(request):
+    if request.method == 'GET':
+        warranty_number = request.GET.get('WarrantyNumber')
+
+        if not warranty_number:
+            return JsonResponse({'error': 'El número de garantía no puede estar vacío'}, status=400)
+
+        connection = None
+        cursor = None
+
+        try:
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                    f'Server={os.environ["DB_SERVER"]};'
+                                    f'Database={os.environ["DB_NAME"]};'
+                                    f'UID={os.environ["DB_USER"]};'
+                                    f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT W.WarrantyNumber, W.purchaseDate, W.invoiceNumber, I.Description AS Brand, I.SubDescription3 AS Model, S.description, W.usedCount, COALESCE(TSS.statusDescription, 'N/A') AS TechnicalServiceStatus
+                FROM Warranty.warranty W
+                JOIN Main.Item I ON W.ItemId = I.ID
+                JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
+                LEFT JOIN Warranty.technicalService TS ON W.WarrantyNumber = TS.warrantyID
+                LEFT JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
+                WHERE W.WarrantyNumber = ?
+            """
+            cursor.execute(sql, (warranty_number, ))
+
+            warranty = cursor.fetchone()
+
+            if warranty:
+                warranty_dict = dict(zip([column[0] for column in cursor.description], warranty))
+                return JsonResponse(warranty_dict, safe=False)
+            else:
+                return JsonResponse({'error': 'Garantía no encontrada'}, status=404)
+
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': 'A database error occurred'}, status=500)    
+
+        except Exception as e:
+            # Print the actual error to the console for debugging
+            print(f"Error: {e}") 
+            return JsonResponse({'error': str(e)}, status=500)
+        
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@csrf_exempt
+@jwt_required
+def technicalServiceOpenCaseWarranty(request):
+    if request.method == 'POST':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+
+            # Mandatory fields
+            register_id = data.get('registerID')
+            warranty_id = data.get('WarrantyID')
+
+            if not all([register_id, warranty_id]):
+                print(register_id)
+                print(warranty_id)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+
+            # Optional fields
+            issue_id = 0
+            issue_resolution_details = ''
+            status_id = 1
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            connection.autocommit = False
+
+            sql = """
+                INSERT INTO Warranty.technicalService (registerID, warrantyID, issueID, issueResolutionDetails, statusID, receptionDate)
+                VALUES (?, ?, NULL, NULL, ?, GETDATE())
+            """
+            cursor.execute(sql, (register_id, warranty_id, status_id))
+
+            connection.commit()
+            return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
+        
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': 'A database error occurred'}, status=500)
+        
+        except Exception as e:
+            # Catch all other exceptions and rollback
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+    else:
+        return JsonResponse({'error:' 'Invalid request method'}, status=405)
     
 # User Views
 #   1. Login
@@ -928,13 +1054,13 @@ def userLogin(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             email_address = data.get('EmailAddress')
             password = data.get('Password')
 
             if not all([email_address, password]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -958,7 +1084,7 @@ def userLogin(request):
             # Check if user exists and if the password is correct
             if not user_data:
                 # Use a generic error message to prevent username enumeration
-                return JsonResponse({'error': 'Invalid username or password'}, status=401)
+                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
 
             stored_password = user_data[0]
             user_role = user_data[1]
@@ -966,11 +1092,11 @@ def userLogin(request):
 
             # Verify the password
             if not password == stored_password:
-                return JsonResponse({'error': 'Invalid username or password'}, status=401)
+                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
 
             # Check if the user has the correct role for this login path
             if user_role != 'Cliente' and user_role != 'Administrador':
-                return JsonResponse({'error': 'Unauthorized access'}, status=403)
+                return JsonResponse({'error': 'Acceso no autorizado'}, status=403)
             
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
@@ -987,7 +1113,7 @@ def userLogin(request):
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
             
             return JsonResponse({
-                'message': 'Login successful',
+                'message': 'Inicio de sesión éxitoso',
                 'access_token': access_token
                 }, status=200)
 
@@ -1012,7 +1138,7 @@ def publicRegister(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             # Mandatory fields
             first_name = data.get('FirstName')
@@ -1022,7 +1148,7 @@ def publicRegister(request):
             role_id = 3  # Assuming '3' is the roleID for 'Cliente'
             
             if not all([first_name, last_name, email_address, password]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -1042,7 +1168,7 @@ def publicRegister(request):
             # Check if the user already exists within a transaction
             cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'User with this email already exists'}, status=400)
+                return JsonResponse({'error': 'Ya existe un usuario asociado a este correo electrónico'}, status=400)
 
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
@@ -1067,7 +1193,7 @@ def publicRegister(request):
             # Commit the transaction if all operations were successful
             connection.commit()
 
-            return JsonResponse({'message': 'User created successfully'}, status=201)
+            return JsonResponse({'message': 'Usuario registrado éxitosamente'}, status=201)
         
         except pyodbc.Error as db_error:
             # Handle database-specific errors and rollback
@@ -1103,7 +1229,7 @@ def warrantyRegister(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
 
             # Mandatory fields
             register_id = data.get('registerID')
@@ -1129,7 +1255,7 @@ def warrantyRegister(request):
                 product_barcode,
                 invoice_number
             ]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -1152,7 +1278,7 @@ def warrantyRegister(request):
             cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
             connection.commit()
 
-            return JsonResponse({'message': 'Garantía registrada éxitosamente'}, status=201)
+            return JsonResponse({'message': '¡Garantía registrada éxitosamente!'}, status=201)
         
         except pyodbc.Error as db_error:
             print(f"Database Error: {db_error}")
@@ -1231,7 +1357,7 @@ def userProfileEdit(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
             
             # Mandatory fields check
             user_id = data.get('userID')
@@ -1240,7 +1366,7 @@ def userProfileEdit(request):
             email_address = data.get('EmailAddress')
             
             if not all([user_id, first_name, last_name, email_address]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -1265,7 +1391,7 @@ def userProfileEdit(request):
             user_info = cursor.fetchone()
 
             if not user_info:
-                return JsonResponse({'error': 'User not found'}, status=404)
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
             
             customer_id = user_info[0]
             current_email = user_info[1]
@@ -1273,7 +1399,7 @@ def userProfileEdit(request):
             if email_address.lower() != current_email.lower():
                 cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
                 if cursor.fetchone()[0] > 0:
-                    return JsonResponse({'error': 'Email address is already in use by another user'}, status=400)
+                    return JsonResponse({'error': 'Este correo electrónico ya se encuentra asociado a un usuario'}, status=400)
             
             # Update the Customer table
             customer_sql = """
@@ -1293,7 +1419,7 @@ def userProfileEdit(request):
             # Commit the transaction if all operations were successful
             connection.commit()
 
-            return JsonResponse({'message': 'User updated successfully'}, status=200)
+            return JsonResponse({'message': 'Información del usuario editada con éxito'}, status=200)
         
         except pyodbc.Error as db_error:
             # Handle database-specific errors and rollback
@@ -1328,7 +1454,7 @@ def userChangePassword(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
 
             # Mandatory fields check
             user_id = data.get('userID')
@@ -1336,7 +1462,7 @@ def userChangePassword(request):
             new_password = data.get('new_password')
 
             if not all([user_id, current_password, new_password]):
-                return JsonResponse({'error': 'Missing required fields'}, status=400)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'

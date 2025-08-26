@@ -21,6 +21,8 @@ from .views import (
     adminGetMainCustomersRetail,
     getProductByBarCode,
     getCustomerByUserID,
+    technicalServiceGetWarrantyByID,
+    technicalServiceOpenCaseWarranty,
 )
 
 
@@ -46,6 +48,8 @@ urlpatterns = [
     #   Login
     #   Forgot Password
     path('technicalServiceLogin/', technicalServiceLogin, name='technical_service_login'),
+    path('technicalServiceGetWarrantyByID/', technicalServiceGetWarrantyByID, name='technical_service_get_warranty_by_id'),
+    path('technicalServiceOpenCaseWarranty/', technicalServiceOpenCaseWarranty, name='technical_service_open_case_warranty'),
     
     # Administration paths and endpoints
     #   Login
