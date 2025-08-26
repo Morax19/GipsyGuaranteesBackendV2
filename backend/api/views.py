@@ -33,10 +33,17 @@ def adminGetRoles(request):
             roles = cursor.fetchall()
             role_list = [dict(zip([column[0] for column in cursor.description], row)) for row in roles]
             return JsonResponse(role_list, safe=False)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+        
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -63,10 +70,17 @@ def adminGetUsers(request):
             users = cursor.fetchall()
             user_list = [dict(zip([column[0] for column in cursor.description], row)) for row in users]
             return JsonResponse(user_list, safe=False)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+        
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -93,10 +107,17 @@ def adminGetBranches(request):
             branches = cursor.fetchall()
             branch_list = [dict(zip([column[0] for column in cursor.description], row)) for row in branches]
             return JsonResponse(branch_list, safe=False)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+        
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -138,10 +159,17 @@ def getBranchByCustomerID(request):
             branchesByID = cursor.fetchall()
             branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
             return JsonResponse(branchesByIDList, safe=False)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+        
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -184,10 +212,16 @@ def getProductByBarCode(request):
                 return JsonResponse(item_dict, safe=False)
             else:
                 return JsonResponse({'error': 'Producto no encontrado'}, status=404)
-            
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)            
+        
         except Exception as e:
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -227,10 +261,17 @@ def getBranchByCustomerID(request):
             branchesByID = cursor.fetchall()
             branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
             return JsonResponse(branchesByIDList, safe=False)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -335,11 +376,17 @@ def adminGetCustomerByID(request):
                 return JsonResponse(customer_dict, safe=False)
             else:
                 return JsonResponse({'error': 'Customer not found'}, status=404)
-            
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -371,10 +418,17 @@ def adminGetMainCustomers(request):
             customers = cursor.fetchall()
             customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
             return JsonResponse(customer_list, safe=False)
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -407,10 +461,17 @@ def adminGetMainCustomersRetail(request):
             customers = cursor.fetchall()
             customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
             return JsonResponse(customer_list, safe=False)
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+        
         except Exception as e:
             # Print the actual error to the console for debugging
             print(f"Error: {e}") 
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -499,10 +560,16 @@ def adminLogin(request):
                 'message': 'Inicio de sesión éxitoso',
                 'access_token': access_token
                 }, status=200)
-
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+        
         except Exception as e:
             print(f"Error: {e}")
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -762,6 +829,10 @@ def adminCreateBranch(request):
 
             return JsonResponse({'message': 'Branch created successfully'}, status=201)
         
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
         except Exception as e:
             print(f"Error: {e}")
             return JsonResponse({'error': str(e)}, status=500)
@@ -897,10 +968,16 @@ def technicalServiceLogin(request):
                 'message': 'Inicio de sesión éxitoso',
                 'access_token': access_token
                 }, status=200)
-
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+        
         except Exception as e:
             print(f"Error: {e}")
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -1116,10 +1193,16 @@ def userLogin(request):
                 'message': 'Inicio de sesión éxitoso',
                 'access_token': access_token
                 }, status=200)
-
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+        
         except Exception as e:
             print(f"Error: {e}")
             return JsonResponse({'error': str(e)}, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
@@ -1299,7 +1382,64 @@ def warrantyRegister(request):
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
-    
+
+@csrf_exempt
+@jwt_required
+def updateWarrantyUsedCount(request):
+    if request.method == 'PUT':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'JSON INválido'}, status=400)
+
+            # Mandatory fields
+            warranty_id = data.get('WarrantyID')
+
+            if not warranty_id:
+                return JsonResponse({'error': 'El número de garantía no es válido'}, status=400)
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            sql = """
+                UPDATE Warranty.warranty
+                SET usedCount = usedCount + 1
+                WHERE warrantyID = ?
+            """
+            cursor.execute(sql, (warranty_id,))
+            connection.commit()
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error occurred: {db_error}'}, status=500)
+
+        except Exception as e:
+            # Catch all other exceptions and rollback
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 @csrf_exempt
 @jwt_required
 def warrantyHistory(request):
