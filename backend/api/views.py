@@ -1395,7 +1395,7 @@ def warrantyRegister(request):
             # Almacenamiento de facturas en OneDrive
             headers = get_onedrive_headers()
             ext = invoice_img.name.split('.')[-1]
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             safe_name = invoice_img.name.replace(" ", "_").replace("/", "_")
             unique_name = f"{timestamp}_{safe_name}"
             folder_path = "/GARANTIAS/Facturas"
