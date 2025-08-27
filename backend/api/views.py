@@ -254,7 +254,7 @@ def getProductByBarCode(request):
             cursor = connection.cursor()
 
             sql = """
-                SELECT I.ID, I.CategoryID, I.SubDescription3 AS Brand, C.Name AS Category
+                SELECT I.ID, I.CategoryID, I.Description AS productDetail, I.SubDescription3 AS Brand, C.Name AS Category
                 FROM Main.Item I
                 JOIN Main.Category C ON C.ID = I.CategoryID AND C.isRetail = I.isRetail
                 WHERE I.isRetail = 1 AND I.ItemLookupCode = ?
@@ -605,7 +605,7 @@ def adminLogin(request):
                 'user_id': user_id,
                 'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=3)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
             }
 
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
@@ -1015,7 +1015,7 @@ def technicalServiceLogin(request):
                 'user_id': user_id,
                 'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=3)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
             }
 
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
@@ -1169,7 +1169,52 @@ def technicalServiceOpenCaseWarranty(request):
 
     else:
         return JsonResponse({'error:' 'Invalid request method'}, status=405)
+
+def technicalServiceHistory(request):
+    sql = """
+        SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TS.statusDescription
+        FROM Warranty.technicalService TS
+        JOIN Warranty.Users U ON TS.registerID = U.userID
+        JOIN Warranty.Customer C ON U.CustomerID = C.ID
+        JOIN Warranty.warranty W ON TS.warrantyID = W.WarrantyNumber
+        JOIN Warranty.Branch B ON W.branchID = B.branchID
+        JOIN Main.Item I ON W.ItemId = I.ID
+        JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
+    """
+    return
     
+def technicalServiceGetStatus(request):
+    sql = """
+        SELECT statusID, statusDescription
+        FROM Warranty.technicalServiceStatus
+    """
+    return
+
+def technicalServiceGetIssue(request):
+    sql= """
+        SELECT IssueId, IssueDescription
+        FROM Warranty.Issue
+    """
+    return
+
+def technicalServiceUpdateCase(request):
+    sql = """
+        UPDATE Warranty.technicalService
+        SET issueID = ?, issueResolutionDetails = ?, statusID = ?
+        WHERE CaseNumber = ?
+    """
+    # cursor.execute(sql, (issueID, issueResolutionDetails, statusID, CaseNumber))
+    return
+
+def technicalServiceCloseCase(request):
+    sql = """
+        UPDATE Warranty.technicalService
+        SET issueID = ?, issueResolutionDetails = ?, statusID = 3
+        WHERE CaseNumber = ?
+    """
+    # cursor.execute(sql, (issueID, issueResolutionDetails, CaseNumber))
+    return
+
 # User Views
 #   1. Login
 #   2. Public Register
@@ -1240,7 +1285,7 @@ def userLogin(request):
                 'user_id': user_id,
                 'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=3)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
             }
 
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
@@ -1528,7 +1573,15 @@ def warrantyHistory(request):
             cursor = connection.cursor()
 
             # Fetch warranty history
-            cursor.execute("SELECT * FROM Warranty.warranty WHERE registerID = ?", (user_id,))
+            sql = """
+                SELECT W.WarrantyNumber, W.purchaseDate, W.registrationDate, W.usedCount, B.companyName, I.Description AS ProductName, S.description AS WarrantyStatus
+                FROM Warranty.warranty W
+                JOIN Warranty.Branch B ON W.branchID = B.branchID
+                JOIN Main.Item I ON W.ItemId = I.ID
+                JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
+                WHERE W.registerID = ?  
+            """
+            cursor.execute(sql, (user_id,))
             warranties = cursor.fetchall()
             warranties_list = [dict(zip([column[0] for column in cursor.description], row)) for row in warranties]
             return JsonResponse(warranties_list, safe=False)
