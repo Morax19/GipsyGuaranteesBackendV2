@@ -1577,13 +1577,15 @@ def warrantyHistory(request):
                 SELECT W.WarrantyNumber, W.purchaseDate, W.registrationDate, W.usedCount, B.companyName, I.Description AS ProductName, S.description AS WarrantyStatus
                 FROM Warranty.warranty W
                 JOIN Warranty.Branch B ON W.branchID = B.branchID
-                JOIN Main.Item I ON W.ItemId = I.ID
+                JOIN Main.Item I ON W.ItemId = I.ID AND I.isRetail = W.isRetail
                 JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
-                WHERE W.registerID = ?  
+				WHERE W.registerID = ?  
             """
             cursor.execute(sql, (user_id,))
             warranties = cursor.fetchall()
             warranties_list = [dict(zip([column[0] for column in cursor.description], row)) for row in warranties]
+            if warranties_list[0] == warranties_list[1]:
+                print("Hola")
             return JsonResponse(warranties_list, safe=False)
 
         except pyodbc.Error as db_error:
