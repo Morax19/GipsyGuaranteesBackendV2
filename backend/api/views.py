@@ -1171,40 +1171,235 @@ def technicalServiceOpenCaseWarranty(request):
         return JsonResponse({'error:' 'Invalid request method'}, status=405)
 
 def technicalServiceHistory(request):
-    sql = """
-        SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TS.statusDescription
-        FROM Warranty.technicalService TS
-        JOIN Warranty.Users U ON TS.registerID = U.userID
-        JOIN Warranty.Customer C ON U.CustomerID = C.ID
-        JOIN Warranty.warranty W ON TS.warrantyID = W.WarrantyNumber
-        JOIN Warranty.Branch B ON W.branchID = B.branchID
-        JOIN Main.Item I ON W.ItemId = I.ID
-        JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
-    """
-    return
-    
+    if request.method == 'GET':
+        connection = None
+        cursor = None
+
+        user_id = request.GET.get('userID')
+
+        if not user_id:
+            return JsonResponse({'error': 'Usuario inválido'}, status=400)
+
+        try:
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+            
+            """
+            Flujo real deshabilitado mientras se valida el tema de las sucursales asociadas al servicio técnico
+
+            sql = 
+                SELECT U.branchID
+                FROM Warranty.Users U
+                WHERE U.userID = ?
+            
+            cursor.execute(sql, (user_id))
+
+            branch_id = cursor.fetchval()
+
+            if not branch_id:
+                return JsonResponse({'error': 'No se pudo obtener la sucursal a la que se encuentra asociado'}, status=400)
+
+            sql = 
+                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription, W.branchID
+                FROM Warranty.technicalService TS
+                JOIN Warranty.Users U ON TS.registerID = U.userID
+                JOIN Warranty.Customer C ON U.CustomerID = C.ID
+                JOIN Warranty.warranty W ON TS.warrantyID = W.WarrantyNumber
+                JOIN Warranty.Branch B ON W.branchID = B.branchID
+                JOIN Main.Item I ON W.ItemId = I.ID AND W.isRetail = I.isRetail
+                JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
+                WHERE W.branchID = ?
+            
+
+            cursor.execute(sql, (branch_id))
+            """
+
+            sql = """
+                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription, W.branchID
+                FROM Warranty.technicalService TS
+                JOIN Warranty.Users U ON TS.registerID = U.userID
+                JOIN Warranty.Customer C ON U.CustomerID = C.ID
+                JOIN Warranty.warranty W ON TS.warrantyID = W.WarrantyNumber
+                JOIN Warranty.Branch B ON W.branchID = B.branchID
+                JOIN Main.Item I ON W.ItemId = I.ID AND W.isRetail = I.isRetail
+                JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
+            """
+            cursor.execute(sql)
+            ts_cases = cursor.fetchall()
+
+            if ts_cases:
+                ts_list = [dict(zip([column[0] for column in cursor.description], row)) for row in ts_cases]
+                return JsonResponse(ts_list, safe=False)
+            else:
+                return JsonResponse({'error': 'No se encontraron resultados'}, status=400)
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+
+            print(f"Error: {db_error}")
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 def technicalServiceGetStatus(request):
-    sql = """
-        SELECT statusID, statusDescription
-        FROM Warranty.technicalServiceStatus
-    """
-    return
+    if request.method == 'GET':
+        connection = None
+        cursor = None
+        
+        try:
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+            
+            sql = """
+                SELECT statusID, statusDescription
+                FROM Warranty.technicalServiceStatus
+            """
+            cursor.execute(sql)
+            status = cursor.fetchall()
+            
+            if status:
+                status_list = [dict(zip([column[0] for column in cursor.description], row)) for row in status]
+                return JsonResponse(status_list, safe=False)
+            else:
+                return JsonResponse({'error': 'No se encontraron resultados'}, status=400)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            
+            print(f"Error: {db_error}")
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+        
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 def technicalServiceGetIssue(request):
-    sql= """
-        SELECT IssueId, IssueDescription
-        FROM Warranty.Issue
-    """
-    return
+    if request.method == 'GET':
+        connection = None
+        cursor = None
+        
+        try:
+            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
+                                        f'Server={os.environ["DB_SERVER"]};'
+                                        f'Database={os.environ["DB_NAME"]};'
+                                        f'UID={os.environ["DB_USER"]};'
+                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+            
+            sql= """
+                SELECT IssueId, IssueDescription
+                FROM Warranty.Issue
+            """
+            cursor.execute(sql)
+            issue = cursor.fetchall()
+            
+            if issue:
+                issue_list = [dict(zip([column[0] for column in cursor.description], row)) for row in issue]
+                return JsonResponse(issue_list, safe=False)
+            else:
+                return JsonResponse({'error': 'No se encontraron resultados'}, status=400)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            
+            print(f"Error: {db_error}")
+            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+        
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 def technicalServiceUpdateCase(request):
-    sql = """
-        UPDATE Warranty.technicalService
-        SET issueID = ?, issueResolutionDetails = ?, statusID = ?
-        WHERE CaseNumber = ?
-    """
-    # cursor.execute(sql, (issueID, issueResolutionDetails, statusID, CaseNumber))
-    return
+    if request.method == 'PUT':
+        connection = None
+        cursor = None
+        
+        try:
+            # Parse and validate JSON data
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+            
+            # Mandatory fields check
+            
+            if not all([]):
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+            
+            # Optional fields
+            
+
+            # Establish database connection
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+                    
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': 'A database error occurred'}, status=500)
+        
+        except Exception as e:
+            # Catch all other exceptions and rollback
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+            
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 def technicalServiceCloseCase(request):
     sql = """
@@ -1510,9 +1705,9 @@ def updateWarrantyUsedCount(request):
                 return JsonResponse({'error': 'JSON INválido'}, status=400)
 
             # Mandatory fields
-            warranty_id = data.get('WarrantyID')
+            warranty_number = data.get('WarrantyNumber')
 
-            if not warranty_id:
+            if not warranty_number:
                 return JsonResponse({'error': 'El número de garantía no es válido'}, status=400)
 
             connection = pyodbc.connect(
@@ -1527,10 +1722,12 @@ def updateWarrantyUsedCount(request):
             sql = """
                 UPDATE Warranty.warranty
                 SET usedCount = usedCount + 1
-                WHERE warrantyID = ?
+                WHERE WarrantyNumber = ?
             """
-            cursor.execute(sql, (warranty_id,))
+            cursor.execute(sql, (warranty_number,))
             connection.commit()
+
+            return JsonResponse({'message': 'Contador de usos de la garantía actualizado con éxito'}, status=200)
 
         except pyodbc.Error as db_error:
             if connection:
@@ -1584,8 +1781,7 @@ def warrantyHistory(request):
             cursor.execute(sql, (user_id,))
             warranties = cursor.fetchall()
             warranties_list = [dict(zip([column[0] for column in cursor.description], row)) for row in warranties]
-            if warranties_list[0] == warranties_list[1]:
-                print("Hola")
+            
             return JsonResponse(warranties_list, safe=False)
 
         except pyodbc.Error as db_error:
