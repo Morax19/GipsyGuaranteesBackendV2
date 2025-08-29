@@ -19,31 +19,46 @@ from django.views.decorators.csrf import csrf_exempt
 @jwt_required
 def adminGetRoles(request):
     if request.method == 'GET':
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
+
         try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
+
             sql = "SELECT RoleID, Description FROM Warranty.Role"
             cursor.execute(sql)
+
             roles = cursor.fetchall()
-            role_list = [dict(zip([column[0] for column in cursor.description], row)) for row in roles]
-            return JsonResponse(role_list, safe=False)
+            if roles:
+                role_list = [dict(zip([column[0] for column in cursor.description], row)) for row in roles]
+                return JsonResponse(role_list, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Ha ocurrido un error, por favor inténtelo más tarde.',
+                    'warning': 'Error: No se han encontrado los roles.'
+                    }, status=404) 
         
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                
+                }, status=500)
         
         except Exception as e:
-            # Print the actual error to the console for debugging
             print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                
+                }, status=500)
         
         finally:
             if cursor:
@@ -51,36 +66,56 @@ def adminGetRoles(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Error: Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'            
+            }, status=405)
 
 @jwt_required
 def adminGetUsers(request):
     if request.method == 'GET':
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
-        try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
-            cursor = connection.cursor()
-            sql = "SELECT U.userID, U.Users, U.Password, U.registrationDate, U.CustomerID, R.Description FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID"
-            cursor.execute(sql)
-            users = cursor.fetchall()
-            user_list = [dict(zip([column[0] for column in cursor.description], row)) for row in users]
-            return JsonResponse(user_list, safe=False)
         
+        try:
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT U.userID, U.Users, U.Password, U.registrationDate, U.CustomerID, R.Description
+                FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID
+            """
+            cursor.execute(sql)
+
+            users = cursor.fetchall()
+            if users:
+                user_list = [dict(zip([column[0] for column in cursor.description], row)) for row in users]
+                return JsonResponse(user_list, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Error: No se han encontrado usuarios.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                    
+                    }, status=404)
+            
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                
+                }, status=500)
         
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -88,36 +123,56 @@ def adminGetUsers(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @jwt_required
 def adminGetBranches(request):
     if request.method == 'GET':
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
-        try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
-            cursor = connection.cursor()
-            sql = "SELECT B.branchID, B.customerID, B.isRetail, B.RIFtype, B.RIF, B.companyName, B.address, B.branchDescription FROM Warranty.Branch B"
-            cursor.execute(sql)
-            branches = cursor.fetchall()
-            branch_list = [dict(zip([column[0] for column in cursor.description], row)) for row in branches]
-            return JsonResponse(branch_list, safe=False)
         
+        try:
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT B.branchID, B.customerID, B.isRetail, B.RIFtype, B.RIF, B.companyName, B.address, B.branchDescription
+                FROM Warranty.Branch B
+            """
+            cursor.execute(sql)
+
+            branches = cursor.fetchall()
+            if branches:
+                branch_list = [dict(zip([column[0] for column in cursor.description], row)) for row in branches]
+                return JsonResponse(branch_list, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'No se han encontrado sucursales',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=404)
+
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)         
         
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500) 
         
         finally:
             if cursor:
@@ -125,7 +180,10 @@ def adminGetBranches(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+        }, status=405)
 
 @jwt_required
 def getBranchByCustomerID(request):
@@ -133,20 +191,22 @@ def getBranchByCustomerID(request):
         customer_id = request.GET.get('customerID')
         isRetail = request.GET.get('isRetail')
 
-        if not customer_id:
-            return JsonResponse({'error': 'Se querie el parámetro customerID'}, status=400)
-        if not isRetail:
-            return JsonResponse({'error': 'Se querie el parámetro isRetail'}, status=400)
+        if not all([customer_id, isRetail]):
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
         connection = None
         cursor = None
 
         try:
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             sql = """
@@ -158,18 +218,29 @@ def getBranchByCustomerID(request):
             cursor.execute(sql, (customer_id, isRetail))
 
             branchesByID = cursor.fetchall()
-            branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
-            return JsonResponse(branchesByIDList, safe=False)
+            if branchesByID:
+                branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
+                return JsonResponse(branchesByIDList, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Error: Sucursales no encontradas',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=404)
         
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)         
         
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500) 
         
         finally:
             if cursor:
@@ -177,7 +248,10 @@ def getBranchByCustomerID(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'            
+            }, status=405)
 
 @jwt_required
 def getProductByBarCode(request):
@@ -185,17 +259,21 @@ def getProductByBarCode(request):
         barCode = request.GET.get('barCode')
 
         if not barCode:
-            return JsonResponse({'error': 'Missing barCode parameter'}, status=400)
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400) 
 
         connection = None
         cursor = None
 
         try:
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             sql = """
@@ -212,22 +290,36 @@ def getProductByBarCode(request):
                 item_dict = dict(zip([column[0] for column in cursor.description], item))
                 return JsonResponse(item_dict, safe=False)
             else:
-                return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+                return JsonResponse({
+                    'error': 'Error: No se ha encontrado el producto.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=404)
 
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)            
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)            
         
         except Exception as e:
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500) 
         
         finally:
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @jwt_required
 def getBranchByCustomerID(request):
@@ -235,20 +327,22 @@ def getBranchByCustomerID(request):
         customer_id = request.GET.get('mainCustomerID')
         isRetail = request.GET.get('isRetail')
 
-        if not customer_id:
-            return JsonResponse({'error': 'Se querie el parámetro customerID'}, status=400)
-        if not isRetail:
-            return JsonResponse({'error': 'Se querie el parámetro isRetail'}, status=400)
+        if not all([customer_id, isRetail]):
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
         connection = None
         cursor = None
 
         try:
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             sql = """
@@ -260,18 +354,29 @@ def getBranchByCustomerID(request):
             cursor.execute(sql, (customer_id, isRetail))
 
             branchesByID = cursor.fetchall()
-            branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
-            return JsonResponse(branchesByIDList, safe=False)
-        
+            if branchesByID:
+                branchesByIDList = [dict(zip([column[0] for column in cursor.description], row)) for row in branchesByID]
+                return JsonResponse(branchesByIDList, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Error: No se han encontrado sucursales.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=404)
+
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500) 
 
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -279,24 +384,32 @@ def getBranchByCustomerID(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @jwt_required
 def getCustomerByUserID(request):
     if request.method == 'GET':
         user_id = request.GET.get('userID')
+
         if not user_id:
-            return JsonResponse({'error': 'Missing userID parameter'}, status=400)
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
         
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
+        
         try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             connection.autocommit = False
@@ -310,7 +423,10 @@ def getCustomerByUserID(request):
             customer_id = cursor.fetchval()
 
             if not customer_id:
-                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+                return JsonResponse({
+                    'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
 
             sql = """
                 SELECT C.ID, C.FirstName, C.LastName, C.Address, C.Zip, C.EmailAddress, C.PhoneNumber
@@ -319,25 +435,33 @@ def getCustomerByUserID(request):
             """
             cursor.execute(sql, customer_id)
             customer = cursor.fetchone()
-
             connection.commit()
+            
             if customer:
                 customer_dict = dict(zip([column[0] for column in cursor.description], customer))
                 return JsonResponse(customer_dict, safe=False)
             else:
-                return JsonResponse({'error': 'Customer not found'}, status=404)
+                print("hola")
+                return JsonResponse({
+                    'error': 'Error: No se ha encontrado al cliente.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=404)  
         
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)    
+
+            print(db_error)
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)  
         
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -345,25 +469,33 @@ def getCustomerByUserID(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @jwt_required
 def adminGetCustomerByID(request):
     if request.method == 'GET':
         customer_id = request.GET.get('customerID')
+
         if not customer_id:
-            return JsonResponse({'error': 'Se querie el parámetro customerID'}, status=400)
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
         
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
         try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
+            
             sql = """
                 SELECT C.ID, C.FirstName, C.LastName, C.EmailAddress, C.PhoneNumber, C.Address, C.Zip
                 FROM Warranty.Customer C
@@ -376,39 +508,52 @@ def adminGetCustomerByID(request):
                 customer_dict = dict(zip([column[0] for column in cursor.description], customer))
                 return JsonResponse(customer_dict, safe=False)
             else:
-                return JsonResponse({'error': 'Customer not found'}, status=404)
+                return JsonResponse({
+                    'error': 'Error: No se encontró al cliente.',
+                    'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                    }, status=404)
 
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
-        
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=500)
+
         finally:
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'waring': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @jwt_required
 def adminGetMainCustomers(request):
     if request.method == 'GET':
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
+        
         try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
+
             sql = """
                 SELECT DISTINCT(C.ID), C.FirstName + '' + C.LastName AS FullName, C.isRetail
                 FROM Main.Customer C
@@ -416,19 +561,31 @@ def adminGetMainCustomers(request):
                 ORDER BY FullName
             """
             cursor.execute(sql)
-            customers = cursor.fetchall()
-            customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
-            return JsonResponse(customer_list, safe=False)
 
+            customers = cursor.fetchall()
+            if customers:
+                customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
+                return JsonResponse(customer_list, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Error: No se han encontrado las compañías.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=404)
+            
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -436,21 +593,25 @@ def adminGetMainCustomers(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'}, status=405)
     
 @jwt_required
 def adminGetMainCustomersRetail(request):
     if request.method == 'GET':
-        connection = None  # Initialize variables to None
+        connection = None
         cursor = None
+        
         try:
-            # Correct f-string syntax
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
+            
             sql = """
                 SELECT DISTINCT(C.ID), C.FirstName + '' + C.LastName AS FullName, C.isRetail
                 FROM Main.Customer C
@@ -459,19 +620,31 @@ def adminGetMainCustomersRetail(request):
                 ORDER BY FullName
             """
             cursor.execute(sql)
+            
             customers = cursor.fetchall()
-            customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
-            return JsonResponse(customer_list, safe=False)
+            if customers:
+                customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
+                return JsonResponse(customer_list, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Error: No se han encontrado las compañías.',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=404)
 
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)        
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)        
         
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -479,7 +652,10 @@ def adminGetMainCustomersRetail(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
     
 # Admin Views
 #   1. Login
@@ -497,17 +673,20 @@ def adminLogin(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                print("Wrong JSON")
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             email_address = data.get('EmailAddress')
             password = data.get('Password')
 
             if not all([email_address, password]):
-                print("Missing fields")
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
-            # Establish database connection
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
                 f'Server={os.environ["DB_SERVER"]};'
@@ -528,8 +707,10 @@ def adminLogin(request):
 
             # Check if user exists and if the password is correct
             if not user_data:
-                # Use a generic error message to prevent username enumeration
-                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
+                return JsonResponse({
+                    'error': 'Nombre de usuario o contraseña inválidos.',
+                    'warning': 'Nombre de usuario o contraseña inválidos.'
+                }, status=401)
 
             stored_password = user_data[0]
             user_role = user_data[1]
@@ -537,13 +718,16 @@ def adminLogin(request):
 
             # Verify the password
             if not password == stored_password:
-                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
+                return JsonResponse({
+                    'error': 'Nombre de usuario o contraseña inválidos.',
+                    'warning': 'Nombre de usuario o contraseña inválidos.'}, status=401)
 
-            # Check if the user has the correct role for this login path
             if user_role != 'Administrador':
-                return JsonResponse({'error': 'Acceso no autorizado'}, status=403)
+                return JsonResponse({
+                    'error': 'Error: Acceso no autorizado',
+                    'warning': 'Error: Acceso no autorizado'
+                    }, status=403)
             
-            # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
 
             payload = {
@@ -565,11 +749,17 @@ def adminLogin(request):
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -577,7 +767,10 @@ def adminLogin(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -587,11 +780,13 @@ def adminCreateUsers(request):
         cursor = None
 
         try:
-            # Parse and validate JSON data
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
 
             # Mandatory fields
             first_name = data.get('FirstName')
@@ -601,7 +796,10 @@ def adminCreateUsers(request):
             role_id = data.get('roleID')
             
             if not all([first_name, last_name, email_address, password, role_id]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -621,7 +819,10 @@ def adminCreateUsers(request):
             # Check if the user already exists within a transaction
             cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Ya existe un usuario asociado a este correo electrónico'}, status=400)
+                return JsonResponse({
+                    'error': 'Ya existe un usuario asociado a este correo electrónico',
+                    'warning': 'Ya existe un usuario asociado a este correo electrónico'}
+                    , status=400)
 
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
@@ -649,27 +850,33 @@ def adminCreateUsers(request):
             return JsonResponse({'message': 'Usuario registrado éxitosamente'}, status=201)
         
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
             
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
             
         finally:
-            # Always close the cursor and connection
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()         
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
             
 @csrf_exempt
 @jwt_required
@@ -679,11 +886,13 @@ def adminEditUsers(request):
         cursor = None
         
         try:
-            # Parse and validate JSON data
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             # Mandatory fields check
             user_id = data.get('userID')
@@ -693,7 +902,10 @@ def adminEditUsers(request):
             role_id = data.get('roleID')
             
             if not all([user_id, first_name, last_name, email_address, role_id]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -719,7 +931,9 @@ def adminEditUsers(request):
             user_info = cursor.fetchone()
 
             if not user_info:
-                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+                return JsonResponse({
+                    'error': 'Usuario no encontrado',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'}, status=404)
             
             if role_id not in ['1', '2', '3']:
                 return JsonResponse({'error': 'Invalid role'}, status=400)
@@ -730,7 +944,10 @@ def adminEditUsers(request):
             if email_address.lower() != current_email.lower():
                 cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
                 if cursor.fetchone()[0] > 0:
-                    return JsonResponse({'error': 'Este correo electrónico ya se encuentra asociado a un usuario'}, status=400)
+                    return JsonResponse({
+                        'error': 'Este correo electrónico ya se encuentra asociado a un usuario',
+                        'warning': 'Este correo electrónico ya se encuentra asociado a un usuario.'
+                        }, status=400)
             
             # Update the Customer table
             customer_sql = """
@@ -762,18 +979,22 @@ def adminEditUsers(request):
             return JsonResponse({'message': 'Información del usuario editada con éxito'}, status=200)
         
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
             
         finally:
             if cursor:
@@ -781,7 +1002,10 @@ def adminEditUsers(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -793,7 +1017,10 @@ def adminCreateBranch(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             customerID = data.get('customerID')
             isRetail = data.get('isRetail')
@@ -807,7 +1034,10 @@ def adminCreateBranch(request):
                 isRetail = 0
 
             if customerID is None or not all([RIFtype, RIF, companyName, address, branchDescription]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
                                         f'Server={os.environ["DB_SERVER"]};'
@@ -819,7 +1049,10 @@ def adminCreateBranch(request):
             # Check if branch already exists
             cursor.execute("SELECT COUNT(*) FROM Warranty.Branch WHERE Branch.RIF = ?", (RIF,))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Branch already exists'}, status=400)
+                return JsonResponse({
+                    'error': 'Error: Esta sucursal ya existe.',
+                    'warning': 'Esta sucursal ya existe.'
+                    }, status=400)
 
             sql = """
                 INSERT INTO Warranty.Branch (customerID, isRetail, RIFtype, RIF, companyName, address, branchDescription)
@@ -833,10 +1066,20 @@ def adminCreateBranch(request):
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
+        
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -844,15 +1087,24 @@ def adminCreateBranch(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
 def adminEditBranch(request):
     if request.method == 'PUT':
         try:
-            data = json.loads(request.body)
-            
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
+
             branchID = data.get('branchID')
             customerID = data.get('customerID')
             RIFtype = data.get('RIFtype')
@@ -866,7 +1118,10 @@ def adminEditBranch(request):
                 isRetail = 0
 
             if customerID is None or not all([branchID, RIFtype, RIF, companyName, address, branchDescription]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
                                         f'Server={os.environ["DB_SERVER"]};'
@@ -884,16 +1139,35 @@ def adminEditBranch(request):
             connection.commit()
 
             return JsonResponse({'message': 'Branch updated successfully'}, status=200)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
+
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
+        
         finally:
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 # Technical Service Views
 #   1. Login
@@ -907,13 +1181,19 @@ def technicalServiceLogin(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             email_address = data.get('EmailAddress')
             password = data.get('Password')
 
             if not all([email_address, password]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -937,7 +1217,9 @@ def technicalServiceLogin(request):
             # Check if user exists and if the password is correct
             if not user_data:
                 # Use a generic error message to prevent username enumeration
-                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
+                return JsonResponse({
+                    'error': 'Nombre de usuario o contraseña inválidos.',
+                    'warning': 'Nombre de usuario o contraseña inválidos.'}, status=401)
 
             stored_password = user_data[0]
             user_role = user_data[1]
@@ -945,7 +1227,9 @@ def technicalServiceLogin(request):
 
             # Verify the password
             if not password == stored_password:
-                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
+                return JsonResponse({
+                    'error': 'Nombre de usuario o contraseña inválidos.',
+                    'warning': 'Nombre de usuario o contraseña inválidos.'}, status=401)
 
             # Check if the user has the correct role for this login path
             if user_role != 'Servicio Técnico' and user_role != 'Administrador':
@@ -973,11 +1257,20 @@ def technicalServiceLogin(request):
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -985,7 +1278,10 @@ def technicalServiceLogin(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @jwt_required
 def technicalServiceGetWarrantyByID(request):
@@ -993,17 +1289,21 @@ def technicalServiceGetWarrantyByID(request):
         warranty_number = request.GET.get('WarrantyNumber')
 
         if not warranty_number:
-            return JsonResponse({'error': 'El número de garantía no puede estar vacío'}, status=400)
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
         connection = None
         cursor = None
 
         try:
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                    f'Server={os.environ["DB_SERVER"]};'
-                                    f'Database={os.environ["DB_NAME"]};'
-                                    f'UID={os.environ["DB_USER"]};'
-                                    f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             sql = """
@@ -1026,16 +1326,22 @@ def technicalServiceGetWarrantyByID(request):
                 return JsonResponse({'error': 'Garantía no encontrada'}, status=404)
 
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)    
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)   
 
         except Exception as e:
-            # Print the actual error to the console for debugging
-            print(f"Error: {e}") 
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -1043,7 +1349,10 @@ def technicalServiceGetWarrantyByID(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 def technicalServiceHistory(request):
     if request.method == 'GET':
@@ -1053,7 +1362,10 @@ def technicalServiceHistory(request):
         user_id = request.GET.get('userID')
 
         if not user_id:
-            return JsonResponse({'error': 'Usuario inválido'}, status=400)
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
         try:
             connection = pyodbc.connect(
@@ -1118,12 +1430,19 @@ def technicalServiceHistory(request):
             if connection:
                 connection.rollback()
 
-            print(f"Error: {db_error}")
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1131,7 +1450,10 @@ def technicalServiceHistory(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 def technicalServiceGetStatus(request):
     if request.method == 'GET':
@@ -1139,11 +1461,12 @@ def technicalServiceGetStatus(request):
         cursor = None
         
         try:
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
             
             sql = """
@@ -1163,12 +1486,19 @@ def technicalServiceGetStatus(request):
             if connection:
                 connection.rollback()
             
-            print(f"Error: {db_error}")
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1176,7 +1506,10 @@ def technicalServiceGetStatus(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 def technicalServiceGetIssue(request):
     if request.method == 'GET':
@@ -1184,11 +1517,12 @@ def technicalServiceGetIssue(request):
         cursor = None
         
         try:
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
             
             sql= """
@@ -1208,12 +1542,19 @@ def technicalServiceGetIssue(request):
             if connection:
                 connection.rollback()
             
-            print(f"Error: {db_error}")
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1221,7 +1562,10 @@ def technicalServiceGetIssue(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -1234,16 +1578,20 @@ def technicalServiceOpenCaseWarranty(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
 
             # Mandatory fields
             register_id = data.get('registerID')
             warranty_id = data.get('WarrantyID')
 
             if not all([register_id, warranty_id]):
-                print(register_id)
-                print(warranty_id)
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             # Optional fields
             issue_id = 0
@@ -1271,18 +1619,22 @@ def technicalServiceOpenCaseWarranty(request):
             return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
         
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1291,7 +1643,10 @@ def technicalServiceOpenCaseWarranty(request):
                 connection.close()
 
     else:
-        return JsonResponse({'error:' 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -1301,11 +1656,13 @@ def technicalServiceUpdateCase(request):
         cursor = None
         
         try:
-            # Parse and validate JSON data
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             # Mandatory fields check
             case_number = data.get('CaseNumber')
@@ -1314,8 +1671,10 @@ def technicalServiceUpdateCase(request):
             status_id = data.get('statusID')
 
             if not all([case_number, issue_id, issue_resolution_details, status_id]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
-
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -1332,46 +1691,130 @@ def technicalServiceUpdateCase(request):
                 SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE()
                 WHERE CaseNumber = ?
             """
-            cursor.execute(sql, (issue_id, issue_resolution_details, status_id, case_number))
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), int(status_id), int(case_number)))
             
             if cursor.rowcount == 0:
-                return JsonResponse({'error': 'No se encontró el caso para actualizar'}, status=404)
-            
+                return JsonResponse({
+                    'error': 'No se encontró el caso para actualizar',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=404)
+
             connection.commit()
             return JsonResponse({'message': 'El caso se ha actualizado correctamente'}, status=200)
                     
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error occurred: {db_error}'}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
             
         finally:
             if cursor:
-                print("alo probando 1")
                 cursor.close()
             if connection:
-                print("alo probando 2")
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
+@csrf_exempt
+@jwt_required
 def technicalServiceCloseCase(request):
-    sql = """
-        UPDATE Warranty.technicalService
-        SET issueID = ?, issueResolutionDetails = ?, statusID = 3
-        WHERE CaseNumber = ?
-    """
-    # cursor.execute(sql, (issueID, issueResolutionDetails, CaseNumber))
-    return
+    if request.method == 'PUT':
+        connection = None
+        cursor = None
+        
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
+            
+            # Mandatory fields check
+            case_number = data.get('CaseNumber')
+            issue_id = data.get('issueID')
+            issue_resolution_details = data.get('issueResolutionDetails')
+            status_id = 3
+            
+            print([case_number, issue_id, issue_resolution_details])
+            if not all([case_number, issue_id, issue_resolution_details]):
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            sql = """
+                UPDATE Warranty.technicalService
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE()
+                WHERE CaseNumber = ?
+            """
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, case_number))
+            
+            if cursor.rowcount == 0:
+                return JsonResponse({
+                    'error': 'No se encontró el caso para cerrar',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=404)
+
+            connection.commit()
+            return JsonResponse({'message': 'El caso se ha cerrado correctamente.'}, status=200)
+                    
+        except pyodbc.Error as db_error:
+            print(db_error)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
+        
+        except Exception as e:
+            print(str(e))
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
+            
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 # User Views
 #   1. Login
@@ -1390,13 +1833,19 @@ def userLogin(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             email_address = data.get('EmailAddress')
             password = data.get('Password')
 
             if not all([email_address, password]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -1419,8 +1868,9 @@ def userLogin(request):
 
             # Check if user exists and if the password is correct
             if not user_data:
-                # Use a generic error message to prevent username enumeration
-                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
+                return JsonResponse({
+                    'error': 'Nombre de usuario o contraseña inválidos.',
+                    'warning': 'Nombre de usuario o contraseña inválidos.'}, status=401)
 
             stored_password = user_data[0]
             user_role = user_data[1]
@@ -1428,7 +1878,9 @@ def userLogin(request):
 
             # Verify the password
             if not password == stored_password:
-                return JsonResponse({'error': 'Nombre de usuario o contraseña inválido'}, status=401)
+                return JsonResponse({
+                    'error': 'Nombre de usuario o contraseña inválidos.',
+                    'warning': 'Nombre de usuario o contraseña inválidos.'}, status=401)
 
             # Check if the user has the correct role for this login path
             if user_role != 'Cliente' and user_role != 'Administrador':
@@ -1456,11 +1908,20 @@ def userLogin(request):
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error ocurred: {db_error}'}, status=500)
+
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
         
         finally:
             if cursor:
@@ -1468,7 +1929,10 @@ def userLogin(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 def publicRegister(request):
@@ -1480,7 +1944,10 @@ def publicRegister(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             # Mandatory fields
             first_name = data.get('FirstName')
@@ -1490,7 +1957,10 @@ def publicRegister(request):
             role_id = 3  # Assuming '3' is the roleID for 'Cliente'
             
             if not all([first_name, last_name, email_address, password]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -1510,7 +1980,10 @@ def publicRegister(request):
             # Check if the user already exists within a transaction
             cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Ya existe un usuario asociado a este correo electrónico'}, status=400)
+                return JsonResponse({
+                    'error': 'Ya existe un usuario asociado a este correo electrónico',
+                    'warning': 'Ya existe un usuario asociado a este correo electrónico'
+                    }, status=400)
 
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
@@ -1535,30 +2008,36 @@ def publicRegister(request):
             # Commit the transaction if all operations were successful
             connection.commit()
 
-            return JsonResponse({'message': 'Usuario registrado éxitosamente'}, status=201)
+            return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
         
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
             
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
             
         finally:
-            # Always close the cursor and connection
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()     
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -1593,7 +2072,10 @@ def warrantyRegister(request):
                 invoice_img,
                 invoice_number
             ]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             # Almacenamiento de facturas en OneDrive
             headers = get_onedrive_headers()
@@ -1606,7 +2088,11 @@ def warrantyRegister(request):
             
             resp = requests.put(upload_url, headers=headers, data=invoice_img.read())
             if resp.status_code not in (200, 201):
-                return JsonResponse({'error': 'Error al subir la factura a OneDrive', 'details': resp.text}, status=500)
+                return JsonResponse({
+                    'error': 'Error al subir la factura a OneDrive',
+                    'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
+                    'details': resp.text
+                    }, status=500)
 
             data = resp.json()
             invoice_copy_path = data["webUrl"]
@@ -1623,7 +2109,10 @@ def warrantyRegister(request):
             # Check if the warranty already exists by invoiceNumber
             cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ? AND ItemId = ?", (invoice_number, item_id))
             if cursor.fetchone()[0] > 0:
-                return JsonResponse({'error': 'Ya existe una garantía para este producto asociada a esta factura'}, status=400)
+                return JsonResponse({
+                    'error': 'Ya existe una garantía para este producto asociada a esta factura.',
+                    'warning': 'Ya existe una garantía para este producto asociada a esta factura.'
+                    }, status=400)
 
             sql = """
                 INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
@@ -1632,19 +2121,25 @@ def warrantyRegister(request):
             cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
             connection.commit()
 
-            return JsonResponse({'message': '¡Garantía registrada éxitosamente!'}, status=201)
+            return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
         
         except pyodbc.Error as db_error:
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(db_error)}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1652,7 +2147,10 @@ def warrantyRegister(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -1665,13 +2163,19 @@ def updateWarrantyUsedCount(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON INválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
 
             # Mandatory fields
             warranty_number = data.get('WarrantyNumber')
 
             if not warranty_number:
-                return JsonResponse({'error': 'El número de garantía no es válido'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -1695,14 +2199,20 @@ def updateWarrantyUsedCount(request):
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': f'A database error occurred: {db_error}'}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1711,7 +2221,10 @@ def updateWarrantyUsedCount(request):
                 connection.close()
 
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -1721,7 +2234,11 @@ def warrantyHistory(request):
         cursor = None
 
         user_id = request.GET.get('userID')
-
+        if not user_id:
+            return JsonResponse({
+                'error': 'Error: Parámetro user_id inválido.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
         try:
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -1743,21 +2260,33 @@ def warrantyHistory(request):
             """
             cursor.execute(sql, (user_id,))
             warranties = cursor.fetchall()
-            warranties_list = [dict(zip([column[0] for column in cursor.description], row)) for row in warranties]
-            
-            return JsonResponse(warranties_list, safe=False)
+
+            if warranties:
+                warranties_list = [dict(zip([column[0] for column in cursor.description], row)) for row in warranties]
+                return JsonResponse(warranties_list, safe=False)
+            else:
+                return JsonResponse({
+                    'error': 'Error: No se encontraron garantías',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=404)
 
         except pyodbc.Error as db_error:
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         finally:
             if cursor:
@@ -1765,7 +2294,10 @@ def warrantyHistory(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
     
 @csrf_exempt
 @jwt_required
@@ -1775,11 +2307,13 @@ def userProfileEdit(request):
         cursor = None
         
         try:
-            # Parse and validate JSON data
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
             
             # Mandatory fields check
             user_id = data.get('userID')
@@ -1788,7 +2322,10 @@ def userProfileEdit(request):
             email_address = data.get('EmailAddress')
             
             if not all([user_id, first_name, last_name, email_address]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
             
             # Optional fields
             address = data.get('Address')
@@ -1813,7 +2350,9 @@ def userProfileEdit(request):
             user_info = cursor.fetchone()
 
             if not user_info:
-                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+                return JsonResponse({
+                    'error': 'Usuario no encontrado',
+                    'warning': 'Ha ocurrido un error, por favor inténelo más tarde.'}, status=404)
             
             customer_id = user_info[0]
             current_email = user_info[1]
@@ -1821,7 +2360,10 @@ def userProfileEdit(request):
             if email_address.lower() != current_email.lower():
                 cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
                 if cursor.fetchone()[0] > 0:
-                    return JsonResponse({'error': 'Este correo electrónico ya se encuentra asociado a un usuario'}, status=400)
+                    return JsonResponse({
+                    'error': 'Ya existe un usuario asociado a este correo electrónico',
+                    'warning': 'Ya existe un usuario asociado a este correo electrónico'}
+                    , status=400)
             
             # Update the Customer table
             customer_sql = """
@@ -1844,18 +2386,22 @@ def userProfileEdit(request):
             return JsonResponse({'message': 'Información del usuario editada con éxito'}, status=200)
         
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
         
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
             
         finally:
             if cursor:
@@ -1863,7 +2409,10 @@ def userProfileEdit(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
 
 @csrf_exempt
 @jwt_required
@@ -1876,7 +2425,10 @@ def userChangePassword(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
 
             # Mandatory fields check
             user_id = data.get('userID')
@@ -1884,7 +2436,10 @@ def userChangePassword(request):
             new_password = data.get('new_password')
 
             if not all([user_id, current_password, new_password]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -1899,7 +2454,9 @@ def userChangePassword(request):
             actual_password = cursor.fetchval()
 
             if current_password != actual_password:
-                return JsonResponse({'error': 'Contraseña actual incorrecta'}, status=400)
+                return JsonResponse({
+                    'error': 'Error: Contraseña actual incorrecta.',
+                    'warning': 'Contraseña incorrecta, inténtelo nuevamente.'}, status=400)
 
             sql = """
                 UPDATE Warranty.Users
@@ -1912,18 +2469,22 @@ def userChangePassword(request):
             return JsonResponse({'message': 'Contraseña actualizada con éxito'}, status=200)
 
         except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
 
         except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
             if connection:
                 connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
+            
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
                 
         finally:
             if cursor:
@@ -1931,4 +2492,7 @@ def userChangePassword(request):
             if connection:
                 connection.close()
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
