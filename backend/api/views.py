@@ -1333,11 +1333,11 @@ def technicalServiceUpdateCase(request):
                 WHERE CaseNumber = ?
             """
             cursor.execute(sql, (issue_id, issue_resolution_details, status_id, case_number))
-            connection.commit()
-
+            
             if cursor.rowcount == 0:
                 return JsonResponse({'error': 'No se encontró el caso para actualizar'}, status=404)
             
+            connection.commit()
             return JsonResponse({'message': 'El caso se ha actualizado correctamente'}, status=200)
                     
         except pyodbc.Error as db_error:
