@@ -23,6 +23,7 @@ from .views import (
     getCustomerByUserID,
     technicalServiceGetWarrantyByID,
     technicalServiceOpenCaseWarranty,
+    technicalServiceUpdateCase,
     updateWarrantyUsedCount,
     technicalServiceHistory,
     technicalServiceGetStatus,
@@ -31,9 +32,6 @@ from .views import (
 
 
 urlpatterns = [
-    # General endpoints
-    #   Forgot Password
-
     # User's paths and endpoints
     #   Login
     #   Public Register
@@ -54,6 +52,7 @@ urlpatterns = [
     path('technicalServiceLogin/', technicalServiceLogin, name='technical_service_login'),
     path('technicalServiceGetWarrantyByID/', technicalServiceGetWarrantyByID, name='technical_service_get_warranty_by_id'),
     path('technicalServiceOpenCaseWarranty/', technicalServiceOpenCaseWarranty, name='technical_service_open_case_warranty'),
+    path('technicalServiceUpdateCase/', technicalServiceUpdateCase, name='technical_service_update_case'),
     path('updateWarrantyUsedCount/', updateWarrantyUsedCount, name='update_warranty_used_count'),
     path('technicalServiceHistory/', technicalServiceHistory, name='technical_service_history'),
     path('technicalServiceGetStatus/', technicalServiceGetStatus, name='technical_service_get_status'),

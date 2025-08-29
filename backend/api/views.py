@@ -10,67 +10,12 @@ from json.decoder import JSONDecodeError
 from .onedrive import get_onedrive_headers
 from django.views.decorators.csrf import csrf_exempt
 
-# Conexión a OneDrive
-def get_onedriveProofsOfPayments(invoiceEntries):
-    headers = get_onedrive_headers()
-    folder_path = "/GARANTIAS/Facturas"
-    updated_entries = []
-    
-    for entry in invoiceEntries:
-        if entry[7]:
-            filename = entry[7].split('/')[-1]
-            file_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:{folder_path}/{filename}"
-
-            try:
-                response = requests.get(file_url, headers=headers)
-                if response.status_code == 200:
-                    file_data = response.json()
-                    
-                    file_id = file_data['id']
-
-                    # Generación de enlace de compartición
-                    share_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
-                    share_data = {
-                        "type": "view",
-                        "scope": "anonymous"
-                    }
-                    share_response = requests.post(share_url, headers=headers, json=share_data)
-
-                    updated_entry = list(entry)
-                    if share_response.status_code == 200:
-                        shared_link = share_response.json()["link"]["webUrl"]
-                        updated_entry[7] = {
-                            'url': shared_link,
-                            'name': filename,
-                            'error': False,
-                            'email_url': f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/content"
-                        }
-                    else:
-                        shared_link = file_data.get('webUrl')
-                        updated_entry[7] = {
-                            'url': shared_link,
-                            'name': filename,
-                            'error': True,
-                            'email_url': f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/content"
-                        }
-
-                    updated_entries.append(tuple(updated_entry))
-                
-                else:
-                    updated_entries.append(entry)
-            
-            except Exception as e:
-                updated_entries.append(entry)
-    
-    return updated_entries
-
 # General use Views
 #   Get Roles
 #   Get Users
 #   Get Branches
 #   Get CustomerByID
 #   Get Main.Customers (With Warranty.Inventory)
-
 @jwt_required
 def adminGetRoles(request):
     if request.method == 'GET':
@@ -1100,76 +1045,6 @@ def technicalServiceGetWarrantyByID(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-@csrf_exempt
-@jwt_required
-def technicalServiceOpenCaseWarranty(request):
-    if request.method == 'POST':
-        connection = None
-        cursor = None
-
-        try:
-            try:
-                data = json.loads(request.body)
-            except JSONDecodeError:
-                return JsonResponse({'error': 'JSON Inválido'}, status=400)
-
-            # Mandatory fields
-            register_id = data.get('registerID')
-            warranty_id = data.get('WarrantyID')
-
-            if not all([register_id, warranty_id]):
-                print(register_id)
-                print(warranty_id)
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
-
-            # Optional fields
-            issue_id = 0
-            issue_resolution_details = ''
-            status_id = 1
-
-            connection = pyodbc.connect(
-                f'Driver={{ODBC Driver 18 for SQL Server}};'
-                f'Server={os.environ["DB_SERVER"]};'
-                f'Database={os.environ["DB_NAME"]};'
-                f'UID={os.environ["DB_USER"]};'
-                f'PWD={os.environ["DB_PASSWORD"]};'
-            )
-            cursor = connection.cursor()
-
-            connection.autocommit = False
-
-            sql = """
-                INSERT INTO Warranty.technicalService (registerID, warrantyID, issueID, issueResolutionDetails, statusID, receptionDate)
-                VALUES (?, ?, NULL, NULL, ?, GETDATE())
-            """
-            cursor.execute(sql, (register_id, warranty_id, status_id))
-
-            connection.commit()
-            return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
-        
-        except pyodbc.Error as db_error:
-            # Handle database-specific errors and rollback
-            print(f"Database Error: {db_error}")
-            if connection:
-                connection.rollback()
-            return JsonResponse({'error': 'A database error occurred'}, status=500)
-        
-        except Exception as e:
-            # Catch all other exceptions and rollback
-            print(f"Error: {e}")
-            if connection:
-                connection.rollback()
-            return JsonResponse({'error': str(e)}, status=500)
-
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-
-    else:
-        return JsonResponse({'error:' 'Invalid request method'}, status=405)
-
 def technicalServiceHistory(request):
     if request.method == 'GET':
         connection = None
@@ -1221,7 +1096,7 @@ def technicalServiceHistory(request):
             """
 
             sql = """
-                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription, W.branchID
+                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, TS.lastUpdated, TS.closedDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription, W.branchID
                 FROM Warranty.technicalService TS
                 JOIN Warranty.Users U ON TS.registerID = U.userID
                 JOIN Warranty.Customer C ON U.CustomerID = C.ID
@@ -1348,27 +1223,33 @@ def technicalServiceGetIssue(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-def technicalServiceUpdateCase(request):
-    if request.method == 'PUT':
+@csrf_exempt
+@jwt_required
+def technicalServiceOpenCaseWarranty(request):
+    if request.method == 'POST':
         connection = None
         cursor = None
-        
+
         try:
-            # Parse and validate JSON data
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
                 return JsonResponse({'error': 'JSON Inválido'}, status=400)
-            
-            # Mandatory fields check
-            
-            if not all([]):
-                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
-            
-            # Optional fields
-            
 
-            # Establish database connection
+            # Mandatory fields
+            register_id = data.get('registerID')
+            warranty_id = data.get('WarrantyID')
+
+            if not all([register_id, warranty_id]):
+                print(register_id)
+                print(warranty_id)
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+
+            # Optional fields
+            issue_id = 0
+            issue_resolution_details = ''
+            status_id = 1
+
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
                 f'Server={os.environ["DB_SERVER"]};'
@@ -1378,7 +1259,17 @@ def technicalServiceUpdateCase(request):
             )
             cursor = connection.cursor()
 
-                    
+            connection.autocommit = False
+
+            sql = """
+                INSERT INTO Warranty.technicalService (registerID, warrantyID, issueID, issueResolutionDetails, statusID, receptionDate, lastUpdated, closedDate)
+                VALUES (?, ?, NULL, NULL, ?, GETDATE(), NULL, NULL)
+            """
+            cursor.execute(sql, (register_id, warranty_id, status_id))
+
+            connection.commit()
+            return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
+        
         except pyodbc.Error as db_error:
             # Handle database-specific errors and rollback
             print(f"Database Error: {db_error}")
@@ -1392,11 +1283,83 @@ def technicalServiceUpdateCase(request):
             if connection:
                 connection.rollback()
             return JsonResponse({'error': str(e)}, status=500)
-            
+
         finally:
             if cursor:
                 cursor.close()
             if connection:
+                connection.close()
+
+    else:
+        return JsonResponse({'error:' 'Invalid request method'}, status=405)
+
+@csrf_exempt
+@jwt_required
+def technicalServiceUpdateCase(request):
+    if request.method == 'PUT':
+        connection = None
+        cursor = None
+        
+        try:
+            # Parse and validate JSON data
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({'error': 'JSON Inválido'}, status=400)
+            
+            # Mandatory fields check
+            case_number = data.get('CaseNumber')
+            issue_id = data.get('issueID')
+            issue_resolution_details = data.get('issueResolutionDetails')
+            status_id = data.get('statusID')
+
+            if not all([case_number, issue_id, issue_resolution_details, status_id]):
+                return JsonResponse({'error': 'Ha ocurrido un error con los campos requeridos'}, status=400)
+
+
+            # Establish database connection
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            sql = """
+                UPDATE Warranty.technicalService
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE()
+                WHERE CaseNumber = ?
+            """
+            cursor.execute(sql, (issue_id, issue_resolution_details, status_id, case_number))
+            connection.commit()
+
+            if cursor.rowcount == 0:
+                return JsonResponse({'error': 'No se encontró el caso para actualizar'}, status=404)
+            
+            return JsonResponse({'message': 'El caso se ha actualizado correctamente'}, status=200)
+                    
+        except pyodbc.Error as db_error:
+            # Handle database-specific errors and rollback
+            print(f"Database Error: {db_error}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': f'A database error occurred: {db_error}'}, status=500)
+        
+        except Exception as e:
+            # Catch all other exceptions and rollback
+            print(f"Error: {e}")
+            if connection:
+                connection.rollback()
+            return JsonResponse({'error': str(e)}, status=500)
+            
+        finally:
+            if cursor:
+                print("alo probando 1")
+                cursor.close()
+            if connection:
+                print("alo probando 2")
                 connection.close()
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
