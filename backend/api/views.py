@@ -701,7 +701,7 @@ def adminLogin(request):
                 SELECT U.Password, R.Description, U.userID, C.FirstName
                 FROM Warranty.Users U
                 JOIN Warranty.Role R ON U.roleID = R.RoleID
-                JOIN Warranty.Customer C ON C.ID = U.CustomerID
+                JOIN Warranty.Customer C ON U.CustomerID = C.ID
                 WHERE U.Users = ?;
             """
             cursor.execute(sql, (email_address,))
@@ -718,7 +718,7 @@ def adminLogin(request):
             user_role = user_data[1]
             user_id = user_data[2]
             user_fname = user_data[3]
-            print(user_fname)
+
             # Verify the password
             if not password == stored_password:
                 return JsonResponse({
@@ -1212,8 +1212,10 @@ def technicalServiceLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description, U.userID
-                FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID
+                SELECT U.Password, R.Description, U.userID, C.FirstName
+                FROM Warranty.Users U
+                JOIN Warranty.Role R ON U.roleID = R.RoleID
+                JOIN Warranty.Customer C ON U.CustomerID = C.ID
                 WHERE U.Users = ?;
             """
             cursor.execute(sql, (email_address,))
@@ -1229,6 +1231,7 @@ def technicalServiceLogin(request):
             stored_password = user_data[0]
             user_role = user_data[1]
             user_id = user_data[2]
+            user_fname = user_data[3]
 
             # Verify the password
             if not password == stored_password:
@@ -1247,6 +1250,7 @@ def technicalServiceLogin(request):
 
             payload = {
                 'user_id': user_id,
+                'user_first_name': user_fname,
                 'email_address': email_address,
                 'role': user_role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
@@ -1864,8 +1868,10 @@ def userLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description, U.userID, U.Users
-                FROM Warranty.Users U JOIN Warranty.Role R ON U.roleID = R.RoleID
+                SELECT U.Password, R.Description, U.userID, U.Users, C.FirstName
+                FROM Warranty.Users U
+                JOIN Warranty.Role R ON U.roleID = R.RoleID
+                JOIN Warranty.Customer C ON U.CustomerID = C.ID
                 WHERE U.Users = ?;
             """
             cursor.execute(sql, (email_address,))
@@ -1880,6 +1886,7 @@ def userLogin(request):
             stored_password = user_data[0]
             user_role = user_data[1]
             user_id = user_data[2]
+            user_fname = user_data[3]
 
             # Verify the password
             if not password == stored_password:
@@ -1898,9 +1905,10 @@ def userLogin(request):
             
             payload = {
                 'user_id': user_id,
+                'user_first_name': user_fname,
                 'email_address': email_address,
                 'role': user_role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+                'exp': datetime.datetime.now() + datetime.timedelta(hours=2)
             }
 
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
@@ -1914,6 +1922,7 @@ def userLogin(request):
             if connection:
                 connection.rollback()
 
+            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -1922,7 +1931,7 @@ def userLogin(request):
         except Exception as e:
             if connection:
                 connection.rollback()
-            
+            print(str(e))
             return JsonResponse({
                 'error': str(e),
                 'warning': 'Ha ocurrido un error, inténtelo más tarde.'
