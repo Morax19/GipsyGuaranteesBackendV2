@@ -4,12 +4,36 @@ import json
 import pyodbc
 import requests
 import datetime
+
+from .emails import (
+    send_user_register_email,
+    send_warranty_register_email,
+)
 from .utils import jwt_required
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
 from .onedrive import get_onedrive_headers
 from django.views.decorators.csrf import csrf_exempt
 
+@csrf_exempt
+def testEmail(request):
+    data_for_email = {
+        'user_name': 'test@example.com',
+        'first_name': 'Test',
+        'last_name': 'Example',
+        'email_address': 'test@example.com',
+        'address': 'Test address',
+        'phone_number': '0414-0011222'
+    }
+
+    email = send_user_register_email(data_for_email)
+
+    if email:
+        print(email)
+        return JsonResponse({'message': 'All good'}, status=200)
+    else:
+        print(email)
+        return JsonResponse({'error': 'Email not good'}, status=400)
 # General use Views
 #   Get Roles
 #   Get Users
@@ -1128,11 +1152,12 @@ def adminEditBranch(request):
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=400)
 
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             sql = """
@@ -1387,7 +1412,8 @@ def technicalServiceHistory(request):
             cursor = connection.cursor()
             
             """
-            Flujo real deshabilitado mientras se valida el tema de las sucursales asociadas al servicio técnico
+            Flujo real deshabilitado mientras se valida el
+            tema de las sucursales asociadas al servicio técnico
 
             sql = 
                 SELECT U.branchID
@@ -2021,7 +2047,17 @@ def publicRegister(request):
 
             # Commit the transaction if all operations were successful
             connection.commit()
+            
+            data_for_email = {
+                'user_name': email_address,
+                'first_name': first_name,
+                'last_name': last_name,
+                'email_address': email_address,
+                'address': address,
+                'phone_number': phone_number
+            }
 
+            send_user_register_email(data_for_email)
             return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
         
         except pyodbc.Error as db_error:
@@ -2130,11 +2166,38 @@ def warrantyRegister(request):
 
             sql = """
                 INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
+                OUTPUT INSERTED.WarrantyNumber
                 VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
             """
             cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
+            warranty_number = cursor.fetchval()
+            
             connection.commit()
+            
+            # Extra fields needed for the email
+            user_name = request.POST['userFirstName']
+            email_address = request.POST['emailAddress']
+            store_name = request.POST['storeName']
+            branch_name = request.POST['branchName']
+            store_rif = f"{request.POST['RIFtype']} - {request.POST['RIF']}"
+            product_model = request.POST['productModel']
 
+            data_for_email = {
+                'user_name': user_name,
+                'email_address': email_address,
+                'warranty_id': warranty_number,
+                'store_name': store_name,
+                'branch_name': branch_name,
+                'store_rif': store_rif,
+                'purchase_date': purchase_date,
+                'invoice_number': invoice_number,
+                'product_brand': product_brand,
+                'product_model': product_model,
+                'product_barcode': product_barcode,
+                'invoice_img_path': invoice_copy_path
+            }
+
+            send_warranty_register_email(data_for_email)
             return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
         
         except pyodbc.Error as db_error:

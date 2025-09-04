@@ -29,10 +29,12 @@ from .views import (
     technicalServiceHistory,
     technicalServiceGetStatus,
     technicalServiceGetIssue,
+    testEmail,
 )
 
 
 urlpatterns = [
+    path('testEmail/', testEmail, name='test_email'),
     # User's paths and endpoints
     #   Login
     #   Public Register
