@@ -34,6 +34,7 @@ def testEmail(request):
     else:
         print(email)
         return JsonResponse({'error': 'Email not good'}, status=400)
+    
 # General use Views
 #   Get Roles
 #   Get Users
@@ -465,7 +466,6 @@ def getCustomerByUserID(request):
                 customer_dict = dict(zip([column[0] for column in cursor.description], customer))
                 return JsonResponse(customer_dict, safe=False)
             else:
-                print("hola")
                 return JsonResponse({
                     'error': 'Error: No se ha encontrado al cliente.',
                     'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -964,7 +964,7 @@ def adminEditUsers(request):
                     'error': 'Usuario no encontrado',
                     'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'}, status=404)
             
-            if role_id not in ['1', '2', '3']:
+            if role_id not in [1, 2, 3]:
                 return JsonResponse({'error': 'Invalid role'}, status=400)
             
             customer_id = user_info[0]
@@ -1068,11 +1068,12 @@ def adminCreateBranch(request):
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=400)
 
-            connection = pyodbc.connect(f'Driver={{ODBC Driver 18 for SQL Server}};'
-                                        f'Server={os.environ["DB_SERVER"]};'
-                                        f'Database={os.environ["DB_NAME"]};'
-                                        f'UID={os.environ["DB_USER"]};'
-                                        f'PWD={os.environ["DB_PASSWORD"]};')
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
             # Check if branch already exists
@@ -1341,12 +1342,13 @@ def technicalServiceGetWarrantyByID(request):
             cursor = connection.cursor()
 
             sql = """
-                SELECT W.WarrantyNumber, W.purchaseDate, W.invoiceNumber, I.Description AS Brand, I.SubDescription3 AS Model, S.description, W.usedCount, COALESCE(TSS.statusDescription, 'N/A') AS TechnicalServiceStatus
+                SELECT W.WarrantyNumber, W.purchaseDate, W.invoiceNumber, I.Description AS Brand, I.SubDescription3 AS Model, S.description, W.usedCount, COALESCE(TSS.statusDescription, 'N/A') AS TechnicalServiceStatus, C.FirstName + ' ' + C.LastName AS Customer, C.NationalId, C.PhoneNumber, C.EmailAddress
                 FROM Warranty.warranty W
-                JOIN Main.Item I ON W.ItemId = I.ID
+                JOIN Main.Item I ON W.ItemId = I.ID AND W.isRetail = I.isRetail
                 JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
                 LEFT JOIN Warranty.technicalService TS ON W.WarrantyNumber = TS.warrantyID
                 LEFT JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
+				JOIN Warranty.Customer C ON W.registerID = C.ID
                 WHERE W.WarrantyNumber = ?
             """
             cursor.execute(sql, (warranty_number, ))
@@ -1443,7 +1445,7 @@ def technicalServiceHistory(request):
             """
 
             sql = """
-                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, TS.lastUpdated, TS.closedDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription, W.branchID
+                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, TS.lastUpdated, TS.closedDate, C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription, W.branchID, I.ItemLookupCode, I.SubDescription3 AS Brand
                 FROM Warranty.technicalService TS
                 JOIN Warranty.Users U ON TS.registerID = U.userID
                 JOIN Warranty.Customer C ON U.CustomerID = C.ID
@@ -1894,7 +1896,7 @@ def userLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description, U.userID, U.Users, C.FirstName
+                SELECT U.Password, R.Description, U.userID, C.FirstName
                 FROM Warranty.Users U
                 JOIN Warranty.Role R ON U.roleID = R.RoleID
                 JOIN Warranty.Customer C ON U.CustomerID = C.ID
@@ -1992,11 +1994,13 @@ def publicRegister(request):
             # Mandatory fields
             first_name = data.get('FirstName')
             last_name = data.get('LastName')
+            national_id = data.get('NationalID')
             email_address = data.get('EmailAddress')
+            phone_number = data.get('PhoneNumber')
             password = data.get('Password')
             role_id = 3  # Assuming '3' is the roleID for 'Cliente'
             
-            if not all([first_name, last_name, email_address, password]):
+            if not all([first_name, last_name, national_id, email_address, password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -2005,7 +2009,7 @@ def publicRegister(request):
             # Optional fields
             address = data.get('Address')
             zip_code = data.get('Zip')
-            phone_number = data.get('PhoneNumber')
+            
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -2030,11 +2034,11 @@ def publicRegister(request):
 
             # Insert into the Customer table and get the new CustomerID
             customer_sql = """
-                INSERT INTO Warranty.Customer (FirstName, LastName, Address, Zip, EmailAddress, PhoneNumber)
+                INSERT INTO Warranty.Customer (FirstName, LastName, Address, Zip, EmailAddress, PhoneNumber, NationalId)
                 OUTPUT INSERTED.ID
-                VALUES (?, ?, ?, ?, ?, ?);
+                VALUES (?, ?, ?, ?, ?, ?, ?);
             """
-            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number))
+            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, national_id))
             
             customer_id = cursor.fetchval()
 
@@ -2045,9 +2049,6 @@ def publicRegister(request):
             """
             cursor.execute(user_sql, (email_address, password, customer_id, role_id))
 
-            # Commit the transaction if all operations were successful
-            connection.commit()
-            
             data_for_email = {
                 'user_name': email_address,
                 'first_name': first_name,
@@ -2057,13 +2058,24 @@ def publicRegister(request):
                 'phone_number': phone_number
             }
 
-            send_user_register_email(data_for_email)
-            return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
-        
+            email = send_user_register_email(data_for_email)
+
+            if email:
+                # Commit the transaction if all operations were successful
+                connection.commit()
+                return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    }, status=400)
+
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
             
+            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -2073,6 +2085,7 @@ def publicRegister(request):
             if connection:
                 connection.rollback()
             
+            print(str(e))
             return JsonResponse({
                 'error': str(e),
                 'warning': 'Ha ocurrido un error, inténtelo más tarde.'
@@ -2147,6 +2160,19 @@ def warrantyRegister(request):
             data = resp.json()
             invoice_copy_path = data["webUrl"]
 
+            # Generación de enlace público para la facutra
+            file_id = data['id']
+
+            create_link_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
+
+            body = {
+                'type': 'view',
+                'scope': 'anonymous'
+            }
+
+            response = requests.post(create_link_url, headers=headers, json=body)
+            public_invoice_url = response.json()['link']['webUrl']
+
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
                 f'Server={os.environ["DB_SERVER"]};'
@@ -2172,8 +2198,6 @@ def warrantyRegister(request):
             cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
             warranty_number = cursor.fetchval()
             
-            connection.commit()
-            
             # Extra fields needed for the email
             user_name = request.POST['userFirstName']
             email_address = request.POST['emailAddress']
@@ -2194,11 +2218,20 @@ def warrantyRegister(request):
                 'product_brand': product_brand,
                 'product_model': product_model,
                 'product_barcode': product_barcode,
-                'invoice_img_path': invoice_copy_path
+                'invoice_img_path': f'{public_invoice_url}?download=1'
             }
 
-            send_warranty_register_email(data_for_email)
-            return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
+            email = send_warranty_register_email(data_for_email)
+
+            if email:
+                connection.commit()
+                return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    }, status=400)
         
         except pyodbc.Error as db_error:
             if connection:
@@ -2213,6 +2246,7 @@ def warrantyRegister(request):
             if connection:
                 connection.rollback()
             
+            print("Error: " + str(e))
             return JsonResponse({
                 'error': str(e),
                 'warning': 'Ha ocurrido un error, inténtelo más tarde.'
