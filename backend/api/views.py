@@ -454,7 +454,7 @@ def getCustomerByUserID(request):
                     }, status=400)
 
             sql = """
-                SELECT C.ID, C.FirstName, C.LastName, C.Address, C.Zip, C.EmailAddress, C.PhoneNumber
+                SELECT C.ID, C.FirstName, C.LastName, C.Address, C.Zip, C.EmailAddress, C.PhoneNumber, C.NationalId
                 FROM Warranty.Customer C
                 WHERE C.ID = ?
             """
@@ -521,7 +521,7 @@ def adminGetCustomerByID(request):
             cursor = connection.cursor()
             
             sql = """
-                SELECT C.ID, C.FirstName, C.LastName, C.EmailAddress, C.PhoneNumber, C.Address, C.Zip
+                SELECT C.ID, C.FirstName, C.LastName, C.EmailAddress, C.PhoneNumber, C.Address, C.Zip, C.NationalId
                 FROM Warranty.Customer C
                 WHERE C.ID = ?
             """
@@ -820,7 +820,9 @@ def adminCreateUsers(request):
             # Mandatory fields
             first_name = data.get('FirstName')
             last_name = data.get('LastName')
+            national_id = data.get('NationalID')
             email_address = data.get('EmailAddress')
+            phone_number = data.get('PhoneNumber')
             password = data.get('Password')
             role_id = data.get('roleID')
             
@@ -833,7 +835,6 @@ def adminCreateUsers(request):
             # Optional fields
             address = data.get('Address')
             zip_code = data.get('Zip')
-            phone_number = data.get('PhoneNumber')
 
             # DB connection
             connection = pyodbc.connect(
@@ -850,19 +851,26 @@ def adminCreateUsers(request):
             if cursor.fetchone()[0] > 0:
                 return JsonResponse({
                     'error': 'Ya existe un usuario asociado a este correo electrónico',
-                    'warning': 'Ya existe un usuario asociado a este correo electrónico'}
-                    , status=400)
+                    'warning': 'Ya existe un usuario asociado a este correo electrónico'
+                    }, status=400)
+
+            cursor.execute("SELECT COUNT(*) FROM Warranty.Customer WHERE NationalId = ?", (national_id,))
+            if cursor.fetchone()[0] > 0:
+                return JsonResponse({
+                    'error': 'Ya existe un usuario asociado a esta cédula de identidad',
+                    'warning': 'Ya existe un usuario asociado a esta cédula de identidad'
+                }, status=400)
 
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
 
             # Insert into the Customer table and get the new CustomerID
             customer_sql = """
-                INSERT INTO Warranty.Customer (FirstName, LastName, Address, Zip, EmailAddress, PhoneNumber)
+                INSERT INTO Warranty.Customer (FirstName, LastName, Address, Zip, EmailAddress, PhoneNumber, NationalId)
                 OUTPUT INSERTED.ID
-                VALUES (?, ?, ?, ?, ?, ?);
+                VALUES (?, ?, ?, ?, ?, ?, ?);
             """
-            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number))
+            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, national_id))
             
             customer_id = cursor.fetchval()
 
@@ -927,7 +935,9 @@ def adminEditUsers(request):
             user_id = data.get('userID')
             first_name = data.get('FirstName')
             last_name = data.get('LastName')
+            national_id = data.get('NationalID')
             email_address = data.get('EmailAddress')
+            phone_number = data.get('PhoneNumber')
             role_id = data.get('roleID')
             
             if not all([user_id, first_name, last_name, email_address, role_id]):
@@ -939,7 +949,6 @@ def adminEditUsers(request):
             # Optional fields
             address = data.get('Address')
             zip_code = data.get('Zip')
-            phone_number = data.get('PhoneNumber')
             password = data.get('Password')
 
             # Establish database connection
@@ -981,10 +990,10 @@ def adminEditUsers(request):
             # Update the Customer table
             customer_sql = """
                 UPDATE Warranty.Customer
-                SET FirstName = ?, LastName = ?, Address = ?, Zip = ?, EmailAddress = ?, PhoneNumber = ?
+                SET FirstName = ?, LastName = ?, Address = ?, Zip = ?, EmailAddress = ?, PhoneNumber = ?, NationalId = ?
                 WHERE ID = ?
             """
-            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, customer_id))
+            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, national_id, customer_id))
 
             # Update the Users table (conditionally update password)
             if password:
@@ -2031,6 +2040,13 @@ def publicRegister(request):
                     'warning': 'Ya existe un usuario asociado a este correo electrónico'
                     }, status=400)
 
+            cursor.execute("SELECT COUNT(*) FROM Warranty.Customer WHERE NationalId = ?", (national_id,))
+            if cursor.fetchone()[0] > 0:
+                return JsonResponse({
+                    'error': 'Ya existe un usuario asociado a esta cédula de identidad',
+                    'warning': 'Ya existe un usuario asociado a esta cédula de identidad'
+                }, status=400)
+
             # Begin a transaction for atomic insertion
             connection.autocommit = False # Ensure we are in a transaction
 
@@ -2432,9 +2448,11 @@ def userProfileEdit(request):
             user_id = data.get('userID')
             first_name = data.get('FirstName')
             last_name = data.get('LastName')
+            national_id = data.get('NationalID')
             email_address = data.get('EmailAddress')
+            phone_number = data.get('PhoneNumber')
             
-            if not all([user_id, first_name, last_name, email_address]):
+            if not all([user_id, first_name, last_name, national_id, email_address, phone_number]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -2443,7 +2461,6 @@ def userProfileEdit(request):
             # Optional fields
             address = data.get('Address')
             zip_code = data.get('Zip')
-            phone_number = data.get('PhoneNumber')
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -2481,10 +2498,10 @@ def userProfileEdit(request):
             # Update the Customer table
             customer_sql = """
                 UPDATE Warranty.Customer
-                SET FirstName = ?, LastName = ?, Address = ?, Zip = ?, EmailAddress = ?, PhoneNumber = ?
+                SET FirstName = ?, LastName = ?, Address = ?, Zip = ?, EmailAddress = ?, PhoneNumber = ?, NationalId = ?
                 WHERE ID = ?
             """
-            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, customer_id))
+            cursor.execute(customer_sql, (first_name, last_name, address, zip_code, email_address, phone_number, national_id, customer_id))
 
             user_sql = """
                 UPDATE Warranty.Users
