@@ -2160,7 +2160,7 @@ def warrantyRegister(request):
             data = resp.json()
             invoice_copy_path = data["webUrl"]
 
-            # Generación de enlace público para la facutra
+            # Generación de enlace público para la factura
             file_id = data['id']
 
             create_link_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
@@ -2218,7 +2218,7 @@ def warrantyRegister(request):
                 'product_brand': product_brand,
                 'product_model': product_model,
                 'product_barcode': product_barcode,
-                'invoice_img_path': f'{public_invoice_url}?download=1'
+                'invoice_img_path': public_invoice_url
             }
 
             email = send_warranty_register_email(data_for_email)
