@@ -8,6 +8,9 @@ import datetime
 from .emails import (
     send_user_register_email,
     send_warranty_register_email,
+    send_warranty_open_case_email,
+    send_warranty_update_case_email,
+    send_warranty_close_case_email
 )
 from .utils import jwt_required
 from django.http import JsonResponse
@@ -1351,13 +1354,14 @@ def technicalServiceGetWarrantyByID(request):
             cursor = connection.cursor()
 
             sql = """
-                SELECT W.WarrantyNumber, W.purchaseDate, W.invoiceNumber, I.Description AS Brand, I.SubDescription3 AS Model, S.description, W.usedCount, COALESCE(TSS.statusDescription, 'N/A') AS TechnicalServiceStatus, C.FirstName + ' ' + C.LastName AS Customer, C.NationalId, C.PhoneNumber, C.EmailAddress
+                SELECT W.WarrantyNumber, W.purchaseDate, W.invoiceNumber, I.Description AS Brand, I.SubDescription3 AS Model, S.description, W.usedCount, COALESCE(TSS.statusDescription, 'N/A') AS TechnicalServiceStatus, C.FirstName + ' ' + C.LastName AS Customer, C.NationalId, C.PhoneNumber, C.EmailAddress, B.companyName
                 FROM Warranty.warranty W
                 JOIN Main.Item I ON W.ItemId = I.ID AND W.isRetail = I.isRetail
                 JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
                 LEFT JOIN Warranty.technicalService TS ON W.WarrantyNumber = TS.warrantyID
                 LEFT JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
 				JOIN Warranty.Customer C ON W.registerID = C.ID
+                JOIN Warranty.Branch B ON W.branchID = B.branchID
                 WHERE W.WarrantyNumber = ?
             """
             cursor.execute(sql, (warranty_number, ))
@@ -1642,8 +1646,6 @@ def technicalServiceOpenCaseWarranty(request):
                 }, status=400)
 
             # Optional fields
-            issue_id = 0
-            issue_resolution_details = ''
             status_id = 1
 
             connection = pyodbc.connect(
@@ -1656,16 +1658,48 @@ def technicalServiceOpenCaseWarranty(request):
             cursor = connection.cursor()
 
             connection.autocommit = False
-
+            
             sql = """
                 INSERT INTO Warranty.technicalService (registerID, warrantyID, issueID, issueResolutionDetails, statusID, receptionDate, lastUpdated, closedDate)
+                OUTPUT INSERTED.CaseNumber, INSERTED.receptionDate
                 VALUES (?, ?, NULL, NULL, ?, GETDATE(), NULL, NULL)
             """
             cursor.execute(sql, (register_id, warranty_id, status_id))
+            case_number, reception_date = cursor.fetchone()
 
-            connection.commit()
-            return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
-        
+            sql_warranty = """
+                UPDATE Warranty.warranty
+                SET usedCount = usedCount + 1
+                WHERE WarrantyNumber = ?
+            """
+            cursor.execute(sql_warranty, (warranty_id))
+
+            data_for_email = {
+                'user_name': data.get('Customer'),
+                'email_address': {
+                    'technical_service': data.get('TechnicalServiceEmail'),
+                    'customer': data.get('CustomerEmail')
+                },
+                'case_number': case_number,
+                'warranty_code': warranty_id,
+                'store_name': data.get('StoreName'),
+                'product_name': data.get('ProductName'),
+                'reception_date': reception_date,
+                'case_status': 'Abierto'
+            }
+
+            email = send_warranty_open_case_email(data_for_email)
+
+            if email:
+                connection.commit()
+                return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    }, status=400)
+            
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
@@ -1747,9 +1781,34 @@ def technicalServiceUpdateCase(request):
                     'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=404)
 
-            connection.commit()
-            return JsonResponse({'message': 'El caso se ha actualizado correctamente'}, status=200)
-                    
+            data_for_email = {
+                'user_name': data.get('Customer'),
+                'email_address': {
+                    'technical_service': data.get('TechnicalServiceEmail'),
+                    'customer': data.get('CustomerEmail')
+                },
+                'case_number': case_number,
+                'warranty_code': data.get('WarrantyID'),
+                'store_name': data.get('StoreName'),
+                'product_name': data.get('ProductName'),
+                'reception_date': data.get('ReceptionDate'),
+                'case_status': data.get('statusDescription'),
+                'issue_description': data.get('issueDescription'),
+                'issue_resolution_details': issue_resolution_details
+            }
+
+            email = send_warranty_update_case_email(data_for_email)
+
+            if email:
+                connection.commit()
+                return JsonResponse({'message': 'El caso se ha actualizado correctamente'}, status=200)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    }, status=400)
+
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
@@ -1801,7 +1860,6 @@ def technicalServiceCloseCase(request):
             issue_resolution_details = data.get('issueResolutionDetails')
             status_id = 3
             
-            print([case_number, issue_id, issue_resolution_details])
             if not all([case_number, issue_id, issue_resolution_details]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
@@ -1830,9 +1888,33 @@ def technicalServiceCloseCase(request):
                     'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=404)
 
-            connection.commit()
-            return JsonResponse({'message': 'El caso se ha cerrado correctamente.'}, status=200)
-                    
+            data_for_email = {
+                'user_name': data.get('Customer'),
+                'email_address': {
+                    'technical_service': data.get('TechnicalServiceEmail'),
+                    'customer': data.get('CustomerEmail')
+                },
+                'case_number': case_number,
+                'warranty_code': data.get('WarrantyID'),
+                'store_name': data.get('StoreName'),
+                'product_name': data.get('ProductName'),
+                'reception_date': data.get('ReceptionDate'),
+                'case_status': data.get('statusDescription'),
+                'issue_description': data.get('issueDescription'),
+                'issue_resolution_details': issue_resolution_details
+            }
+            email = send_warranty_close_case_email(data_for_email)
+
+            if email:
+                connection.commit()
+                return JsonResponse({'message': 'El caso se ha cerrado correctamente.'}, status=200)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    }, status=400)
+
         except pyodbc.Error as db_error:
             print(db_error)
             if connection:
@@ -2279,80 +2361,6 @@ def warrantyRegister(request):
         return JsonResponse({
             'error': 'Invalid request method',
             'warning': 'Ha ocurrido un error, inténtelo más tarde.'
-            }, status=405)
-
-@csrf_exempt
-@jwt_required
-def updateWarrantyUsedCount(request):
-    if request.method == 'PUT':
-        connection = None
-        cursor = None
-
-        try:
-            try:
-                data = json.loads(request.body)
-            except JSONDecodeError:
-                return JsonResponse({
-                    'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
-                    }, status=400)
-
-            # Mandatory fields
-            warranty_number = data.get('WarrantyNumber')
-
-            if not warranty_number:
-                return JsonResponse({
-                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
-                }, status=400)
-
-            connection = pyodbc.connect(
-                f'Driver={{ODBC Driver 18 for SQL Server}};'
-                f'Server={os.environ["DB_SERVER"]};'
-                f'Database={os.environ["DB_NAME"]};'
-                f'UID={os.environ["DB_USER"]};'
-                f'PWD={os.environ["DB_PASSWORD"]};'
-            )
-            cursor = connection.cursor()
-
-            sql = """
-                UPDATE Warranty.warranty
-                SET usedCount = usedCount + 1
-                WHERE WarrantyNumber = ?
-            """
-            cursor.execute(sql, (warranty_number,))
-            connection.commit()
-
-            return JsonResponse({'message': 'Contador de usos de la garantía actualizado con éxito'}, status=200)
-
-        except pyodbc.Error as db_error:
-            if connection:
-                connection.rollback()
-            
-            return JsonResponse({
-                'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
-                }, status=500)
-
-        except Exception as e:
-            if connection:
-                connection.rollback()
-            
-            return JsonResponse({
-                'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
-                }, status=500)
-
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-
-    else:
-        return JsonResponse({
-            'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
             }, status=405)
 
 @csrf_exempt

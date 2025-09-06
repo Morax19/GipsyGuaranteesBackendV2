@@ -8,7 +8,6 @@ from django.core.mail import EmailMessage
 from dotenv import load_dotenv
 load_dotenv()
 
-# Funciones para generar contenido de los correos
 # Versión Cliente
 def create_registration_html(user_name):
     
@@ -194,7 +193,7 @@ def send_user_register_email(data):
         email_content_user = create_registration_html(data['first_name'])
 
         msg = EmailMessage(
-            "Nuevo Registro en Gipsy Garantías",
+            "Gipsy Garantías - Nuevo Registro de Usuario",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']]
@@ -206,7 +205,7 @@ def send_user_register_email(data):
         email_content_intern = create_registration_company_html(data)
 
         msg_intern = EmailMessage(
-            "Nuevo Registro de Usuario - Gipsy Garantías",
+            "Gipsy Garantías - Nuevo Registro de Usuario",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
@@ -519,7 +518,7 @@ def send_warranty_register_email(data):
         email_content_user = create_warranty_registration_html(data)
 
         msg = EmailMessage(
-            "Nueva garantía registrada en Gipsy Garantías",
+            "Gipsy Garantías - Nueva garantía registrada",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']]
@@ -531,7 +530,7 @@ def send_warranty_register_email(data):
         email_content_intern = create_warranty_registration_company_html(data)
 
         msg_intern = EmailMessage(
-            "Nuevo Registro de Garantía - Gipsy Garantías",
+            "Gipsy Garantías - Nuevo Registro de Garantía",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
@@ -544,4 +543,850 @@ def send_warranty_register_email(data):
 
     except Exception as e:
         print(f"Error sending registration email: {e}")
+        return False
+
+# NOTIFICACIÓN DE APERTURA DE CASO DE GARANTÍA
+
+# Versión Cliente
+def create_open_case_html(data):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: black !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 20px 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #6c757d;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header h2 {{
+                margin: 0;
+                color: #333;
+            }}
+            .body-content {{
+                color: #555;
+            }}
+            .body-content p {{
+                margin: 0 0 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f2f2f2;
+                color: #333;
+                width: 40%;
+            }}
+            .data-table td {{
+                word-wrap: break-word;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Apertura de Caso de Garantía</h2>
+            </div>
+            <div class="body-content">
+                <p><strong>Hola, {data["user_name"]}.</strong></p>
+                <p>Su solicitud de servicio ténico ha sido recibida exitosamente. Se ha aperturado un nuevo caso de garantía para su producto y nuestro equipo se encuentra en proceso de revisión.</p>
+                <p>A continuación, se muestra el resumen de su caso:</p>
+                <table class="data-table">
+                    <tr>
+                        <th>Número de Caso</th>
+                        <td>{data["case_number"]}</td>
+                    </tr>
+                    <tr>
+                        <th>Código de Garantía</th>
+                        <td>{data["warranty_code"]}</td>
+                    </tr>
+                    <tr>
+                        <th>Tienda</th>
+                        <td>{data["store_name"]}</td>
+                    </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <td>{data["product_name"]}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de Recepción</th>
+                        <td>{data["reception_date"]}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado del Caso</th>
+                        <td>{data["case_status"]}</td>
+                    </tr>
+                </table>
+                <p>Le notificaremos tan pronto como haya una actualización en el estado de su caso.</p>
+                <p>Si tiene alguna pregunta, no dude en contactar a nuestro equipo de soporte técnico.</p>
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
+# Versión admin
+def create_open_case_company_html(data):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: black !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 20px 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #6c757d;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header h2 {{
+                margin: 0;
+                color: #333;
+            }}
+            .body-content {{
+                color: #555;
+            }}
+            .body-content p {{
+                margin: 0 0 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f2f2f2;
+                color: #333;
+                width: 40%;
+            }}
+            .data-table td {{
+                word-wrap: break-word;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Apertura de Caso de Garantía</h2>
+            </div>
+            <div class="body-content">
+                <p>Se ha aperturado un nuevo caso de garantía con los siguientes datos:</p>
+                <table class="data-table">
+                    <tr>
+                        <th>Cliente</th>
+                        <td>{data['user_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Correo Electrónico</th>
+                        <td>{data['email_address']['customer']}</td>
+                    </tr>
+                    <tr>
+                        <th>Número de Caso</th>
+                        <td>{data['case_number']}</td>
+                    </tr>
+                    <tr>
+                        <th>Código de Garantía</th>
+                        <td>{data['warranty_code']}</td>
+                    </tr>
+                    <tr>
+                        <th>Tienda</th>
+                        <td>{data['store_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <td>{data['product_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de Recepción</th>
+                        <td>{data['reception_date']}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado del Caso</th>
+                        <td>{data['case_status']}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
+def send_warranty_open_case_email(data):
+    try:
+        email_content_user = create_open_case_html(data)
+
+        msg = EmailMessage(
+            'Gipsy Garantías - Apertura de Caso Servicio Técnico',
+            email_content_user,
+            os.environ.get('EMAIL_HOST_USER'),
+            [data['email_address']['customer']]
+        )
+
+        msg.content_subtype = "html"
+        msg.send()
+
+        email_content_intern = create_open_case_company_html(data)
+
+        msg_intern = EmailMessage(
+            'Gipsy Garantías - Apertura de Caso Servicio Técnico',
+            email_content_intern,
+            os.environ.get('EMAIL_HOST_USER'),
+            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), data[email_address]['technical_service']]
+            [os.environ.get('EMAIL_WARRANTY_TEST'), data['email_address']['technical_service']]
+        )
+
+        msg_intern.content_subtype = 'html'
+        msg_intern.send()
+        return True
+
+    except Exception as e:
+        print(f'Error sending registration email: {e}')
+        return False
+
+# NOTIFICACIÓN DE ACTUALIZACIÓN DE UN CASO
+
+# Versión Cliente
+def create_update_case_html(data):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: black !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 20px 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #6c757d;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header h2 {{
+                margin: 0;
+                color: #333;
+            }}
+            .body-content {{
+                color: #555;
+            }}
+            .body-content p {{
+                margin: 0 0 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f2f2f2;
+                color: #333;
+                width: 40%;
+            }}
+            .data-table td {{
+                word-wrap: break-word;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Actualización de Caso de Garantía</h2>
+            </div>
+            <div class="body-content">
+                <p><strong>Hola, {data['user_name']}.</strong></p>
+                <p>Se ha actualizado su caso de garantía para su producto por parte de nuestro equipo.</p>
+                <p>A continuación, se muestra el resumen de su caso:</p>
+                <table class="data-table">
+                    <tr>
+                        <th>Número de Caso</th>
+                        <td>{data['case_number']}</td>
+                    </tr>
+                    <tr>
+                        <th>Código de Garantía</th>
+                        <td>{data['warranty_code']}</td>
+                    </tr>
+                    <tr>
+                        <th>Tienda</th>
+                        <td>{data['store_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <td>{data['product_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de Recepción</th>
+                        <td>{data['reception_date']}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado del Caso</th>
+                        <td>{data['case_status']}</td>
+                    </tr>
+                    <tr>
+                        <th>Diagnóstico</th>
+                        <td>{data['issue_description']}</td>
+                    </tr>
+                    <tr>
+                        <th>Acción Realizada</th>
+                        <td>{data['issue_resolution_details']}</td>
+                    </tr>
+                </table>
+                <p>Le notificaremos tan pronto como haya una actualización en el estado de su caso.</p>
+                <p>Si tiene alguna pregunta, no dude en contactar a nuestro equipo de soporte técnico.</p>
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
+# Versión admin
+def create_update_case_company_html(data):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: black !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 20px 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #6c757d;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header h2 {{
+                margin: 0;
+                color: #333;
+            }}
+            .body-content {{
+                color: #555;
+            }}
+            .body-content p {{
+                margin: 0 0 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f2f2f2;
+                color: #333;
+                width: 40%;
+            }}
+            .data-table td {{
+                word-wrap: break-word;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Actualización de Caso de Garantía</h2>
+            </div>
+            <div class="body-content">
+                <p>Se ha actualizado un caso de garantía con los siguientes datos:</p>
+                <table class="data-table">
+                    <tr>
+                        <th>Cliente</th>
+                        <td>{data['user_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Correo Electrónico</th>
+                        <td>{data['email_address']['customer']}</td>
+                    </tr>
+                    <tr>
+                        <th>Número de Caso</th>
+                        <td>{data['case_number']}</td>
+                    </tr>
+                    <tr>
+                        <th>Código de Garantía</th>
+                        <td>{data['warranty_code']}</td>
+                    </tr>
+                    <tr>
+                        <th>Tienda</th>
+                        <td>{data['store_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <td>{data['product_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de Recepción</th>
+                        <td>{data['reception_date']}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado del Caso</th>
+                        <td>{data['case_status']}</td>
+                    </tr>
+                    <tr>
+                        <th>Diagnóstico</th>
+                        <td>{data['issue_description']}</td>
+                    </tr>
+                    <tr>
+                        <th>Acción Realizada</th>
+                        <td>{data['issue_resolution_details']}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
+def send_warranty_update_case_email(data):
+    try:
+        email_content_user = create_update_case_html(data)
+
+        msg = EmailMessage(
+            'Gipsy Garantías - Actualización de Caso Servicio Técnico',
+            email_content_user,
+            os.environ.get('EMAIL_HOST_USER'),
+            [data['email_address']['customer']]
+        )
+
+        msg.content_subtype = "html"
+        msg.send()
+
+        email_content_intern = create_update_case_company_html(data)
+
+        msg_intern = EmailMessage(
+            'Gipsy Garantías - Actualización de Caso Servicio Técnico',
+            email_content_intern,
+            os.environ.get('EMAIL_HOST_USER'),
+            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), data[email_address]['technical_service']]
+            [os.environ.get('EMAIL_WARRANTY_TEST'), data['email_address']['technical_service']]
+        )
+
+        msg_intern.content_subtype = 'html'
+        msg_intern.send()
+        return True
+
+    except Exception as e:
+        print(f'Error sending registration email: {e}')
+        return False
+
+# NOTIFICACIÓN DE CIERRE DE CASO DE GARANTÍA
+
+# Versión Cliente
+def create_closed_case_html(data):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: black !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 20px 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #6c757d;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header h2 {{
+                margin: 0;
+                color: #333;
+            }}
+            .body-content {{
+                color: #555;
+            }}
+            .body-content p {{
+                margin: 0 0 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f2f2f2;
+                color: #333;
+                width: 40%;
+            }}
+            .data-table td {{
+                word-wrap: break-word;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Actualización de Garantía - Caso Cerrado</h2>
+            </div>
+            <div class="body-content">
+                <p><strong>Hola, {data['user_name']}.</strong></p>
+                <p>Nos complace informarle que su caso de garantía ha sido cerrado. A continuación, se muestra el resumen de su caso y las acciones realizadas por nuestro equipo de servicio técnico:</p>
+                <table class="data-table">
+                    <tr>
+                        <th>Número de Caso</th>
+                        <td>{data['case_number']}</td>
+                    </tr>
+                    <tr>
+                        <th>Código de Garantía</th>
+                        <td>{data['warranty_code']}</td>
+                    </tr>
+                    <tr>
+                        <th>Tienda</th>
+                        <td>{data['store_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <td>{data['product_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de Recepción</th>
+                        <td>{data['reception_date']}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado del Caso</th>
+                        <td>{data['case_status']}</td>
+                    </tr>
+                    <tr>
+                        <th>Diagnóstico</th>
+                        <td>{data['issue_description']}</td>
+                    </tr>
+                    <tr>
+                        <th>Descripción de la Acción Realizada</th>
+                        <td>{data['issue_resolution_details']}</td>
+                    </tr>
+                </table>
+                <p>Si tiene alguna pregunta, no dude en contactar a nuestro equipo de soporte técnico.</p>
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
+# Versión Cliente
+def create_closed_case_company_html(data):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <style>
+            body {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: black !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 20px 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #6c757d;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header h2 {{
+                margin: 0;
+                color: #333;
+            }}
+            .body-content {{
+                color: #555;
+            }}
+            .body-content p {{
+                margin: 0 0 15px;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #e0e0e0;
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #f2f2f2;
+                color: #333;
+                width: 40%;
+            }}
+            .data-table td {{
+                word-wrap: break-word;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Actualización de Garantía - Caso Cerrado</h2>
+            </div>
+            <div class="body-content">
+                <p>Se ha cerrado el caso de garantía #{data['case_number']}. A continuación, se muestra el resumen y las acciones realizadas:</p>
+                <table class="data-table">
+                    <tr>
+                        <th>Cliente</th>
+                        <td>{data['user_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Correo Electrónico</th>
+                        <td>{data['email_address']['customer']}</td>
+                    </tr>
+                    <tr>
+                        <th>Número de Caso</th>
+                        <td>{data['case_number']}</td>
+                    </tr>
+                    <tr>
+                        <th>Código de Garantía</th>
+                        <td>{data['warranty_code']}</td>
+                    </tr>
+                    <tr>
+                        <th>Tienda</th>
+                        <td>{data['store_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <td>{data['product_name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de Recepción</th>
+                        <td>{data['reception_date']}</td>
+                    </tr>
+                    <tr>
+                        <th>Estado del Caso</th>
+                        <td>{data['case_status']}</td>
+                    </tr>
+                    <tr>
+                        <th>Diagnóstico</th>
+                        <td>{data['issue_description']}</td>
+                    </tr>
+                    <tr>
+                        <th>Descripción de la Acción Realizada</th>
+                        <td>{data['issue_resolution_details']}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
+def send_warranty_close_case_email(data):
+    try:
+        email_content_user = create_closed_case_html(data)
+
+        msg = EmailMessage(
+            'Gipsy Garantías - Cierre de Caso Servicio Técnico',
+            email_content_user,
+            os.environ.get('EMAIL_HOST_USER'),
+            [data['email_address']['customer']]
+        )
+
+        msg.content_subtype = "html"
+        msg.send()
+
+        email_content_intern = create_closed_case_company_html(data)
+
+        msg_intern = EmailMessage(
+            'Gipsy Garantías - Cierre de Caso Servicio Técnico',
+            email_content_intern,
+            os.environ.get('EMAIL_HOST_USER'),
+            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), data[email_address]['technical_service']]
+            [os.environ.get('EMAIL_WARRANTY_TEST'), data['email_address']['technical_service']]
+        )
+
+        msg_intern.content_subtype = 'html'
+        msg_intern.send()
+        return True
+
+    except Exception as e:
+        print(f'Error sending registration email: {e}')
         return False    
