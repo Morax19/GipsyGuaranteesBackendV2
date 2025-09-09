@@ -2659,7 +2659,7 @@ def forgottenPassword(request):
                 return JsonResponse({
                 'error': 'No existe un usuario asociado a este correo electrónico',
                 'warning': 'No existe un usuario asociado a este correo electrónico'
-                }, status=400)
+                }, status=404)
 
             sql_name = """
                 SELECT U.userID, C.FirstName, R.Description
@@ -2686,7 +2686,7 @@ def forgottenPassword(request):
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=400)
 
-            jwt_secret = os.environ.get("JWT_SCRET_KEY")
+            jwt_secret = os.environ.get("JWT_SECRET_KEY")
             if not jwt_secret:
                 print('Error: Server misconfiguration: Missing JWT secret key')
                 return JsonResponse({
