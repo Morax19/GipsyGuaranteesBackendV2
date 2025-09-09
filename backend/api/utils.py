@@ -1,5 +1,7 @@
 import os
 import jwt
+import string
+import secrets
 from functools import wraps
 from django.http import JsonResponse
 
@@ -30,3 +32,9 @@ def jwt_required(f):
         return f(request, *args, **kwargs) # <--- This line is critical!
 
     return decorated_function # <--- This line is also critical!
+
+def generate_temp_password(length=12):
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(alphabet) for _ in range(length))
+    return password
+

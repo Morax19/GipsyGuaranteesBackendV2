@@ -10,33 +10,14 @@ from .emails import (
     send_warranty_register_email,
     send_warranty_open_case_email,
     send_warranty_update_case_email,
-    send_warranty_close_case_email
+    send_warranty_close_case_email,
+    send_temp_password_email,
 )
-from .utils import jwt_required
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
 from .onedrive import get_onedrive_headers
 from django.views.decorators.csrf import csrf_exempt
-
-@csrf_exempt
-def testEmail(request):
-    data_for_email = {
-        'user_name': 'test@example.com',
-        'first_name': 'Test',
-        'last_name': 'Example',
-        'email_address': 'test@example.com',
-        'address': 'Test address',
-        'phone_number': '0414-0011222'
-    }
-
-    email = send_user_register_email(data_for_email)
-
-    if email:
-        print(email)
-        return JsonResponse({'message': 'All good'}, status=200)
-    else:
-        print(email)
-        return JsonResponse({'error': 'Email not good'}, status=400)
+from .utils import jwt_required, generate_temp_password
     
 # General use Views
 #   Get Roles
@@ -2035,7 +2016,7 @@ def userLogin(request):
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
             
             return JsonResponse({
-                'message': 'Inicio de sesión éxitoso',
+                'message': 'Inicio de sesión exitoso',
                 'access_token': access_token
                 }, status=200)
         
@@ -2633,4 +2614,130 @@ def userChangePassword(request):
         return JsonResponse({
             'error': 'Invalid request method',
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            }, status=405)
+
+@csrf_exempt
+def ForgotPassword(request):
+    if request.method == 'POST':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
+            
+            email_address = data.get('email')
+
+            if not email_address:
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT COUNT(*)
+                FROM Warranty.Users
+                WHERE Users = ?
+            """
+            cursor.execute(sql, (email_address,))
+            if cursor.fetchone()[0] <= 0:
+                return JsonResponse({
+                'error': 'No existe un usuario asociado a este correo electrónico',
+                'warning': 'No existe un usuario asociado a este correo electrónico'
+                }, status=400)
+
+            sql_name = """
+                SELECT U.userID, C.FirstName, R.Description
+                FROM Warranty.Users U
+                JOIN Warranty.Customer C ON C.ID = U.CustomerID
+                JOIN Warranty.Role R ON U.roleID = R.RoleID
+                WHERE U.Users = ?
+            """
+            cursor.execute(sql_name, (email_address,))
+            user_id, first_name, user_role = cursor.fetchone()
+
+            if not first_name:
+                print("Error al obtener el nombre del usuario.")
+                return JsonResponse({
+                    'error': 'Error al obtener el nombre del usuario'
+                }, status=400)
+
+            
+            temp_password = generate_temp_password()
+            if not temp_password:
+                print("Error al generar la contraseña temporal")
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
+
+            jwt_secret = os.environ.get("JWT_SCRET_KEY")
+            if not jwt_secret:
+                print('Error: Server misconfiguration: Missing JWT secret key')
+                return JsonResponse({
+                    'error': 'Server misconfiguration: missing JWT secret key'
+                }, status=404)
+
+            payload = {
+                'user_id': user_id,
+                'user_first_name': first_name,
+                'email_address': email_address,
+                'temp_password': temp_password,
+                'role': user_role,
+                'exp': datetime.datetime.now + datetime.timedelta(minutes=30)
+            }
+
+            temp_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
+            
+            data_for_email = {
+                'user_name': first_name,
+                'email_address': email_address,
+                'temp_password': temp_password
+            }
+
+            email = send_temp_password_email(data_for_email)
+
+            if email:
+                return JsonResponse({
+                    'message': 'Correo enviado de forma exitosa',
+                    'temp_token': temp_token
+                }, status=200)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo con el código de recuperación.',
+                    'warning': 'Ha ocurrido un error al enviar el correo con el código de recuperación, por favor inténtelo más tarde.'
+                    }, status=400)
+                       
+        except Exception as e:
+            print("Error: " + str(e))
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
             }, status=405)

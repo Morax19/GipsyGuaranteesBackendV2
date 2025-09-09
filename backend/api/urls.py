@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     userLogin,
+    ForgotPassword,
     publicRegister,
     warrantyRegister,
     warrantyHistory,
@@ -28,12 +29,9 @@ from .views import (
     technicalServiceHistory,
     technicalServiceGetStatus,
     technicalServiceGetIssue,
-    testEmail,
 )
 
-
 urlpatterns = [
-    path('testEmail/', testEmail, name='test_email'),
     # User's paths and endpoints
     #   Login
     #   Public Register
@@ -46,7 +44,7 @@ urlpatterns = [
     path('warrantyRegister/', warrantyRegister, name='warranty_register'),
     path('warrantyHistory/', warrantyHistory, name='warranty_history'),
     path('userProfileEdit/', userProfileEdit, name='user_profile_edit'),
-    path('userChangePassword/', userChangePassword, name='user_change_password'),    
+    path('userChangePassword/', userChangePassword, name='user_change_password'),
 
     # Technical Services paths and endpoints
     #   Login
@@ -83,6 +81,7 @@ urlpatterns = [
     #   Get all roles
     path('adminGetUsers/', adminGetUsers, name='admin_get_users'),
     path('adminGetBranches/', adminGetBranches, name='admin_get_branches'),
+    path('ForgotPassword/', ForgotPassword, name='forgot_password'),
     path('adminGetCustomerByID/', adminGetCustomerByID, name='admin_get_customer_by_id'),
     path('getCustomerByUserID/', getCustomerByUserID, name='get_customer_by_user_id'),
     path('adminGetMainCustomers/', adminGetMainCustomers, name='admin_get_MainCustomers'),
