@@ -2699,7 +2699,7 @@ def forgottenPassword(request):
                 'email_address': email_address,
                 'temp_password': temp_password,
                 'role': user_role,
-                'exp': datetime.datetime.now + datetime.timedelta(minutes=30)
+                'exp': datetime.datetime.now() + datetime.timedelta(minutes=30)
             }
 
             temp_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
