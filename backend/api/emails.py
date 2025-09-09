@@ -1,6 +1,4 @@
 import os
-import ssl
-import smtplib
 
 from pathlib import Path
 from django.core.mail import EmailMessage
@@ -1479,10 +1477,10 @@ def create_password_reset_html(data):
                 <div class="password-section">
                     <span class="password-box">{data['temp_password']}</span>
                 </div>
-                <p>Para su seguridad, le recomendamos encarecidamente que cambie esta contraseña en la aplicación.</p>
+                <p>Para su seguridad, le recomendamos encarecidamente que reestablezca su contraseña en la aplicación lo más pronto posible.</p>
             </div>
             <div style="text-align: center;">
-                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net/" class="button">Ir a la aplicación</a>
+                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net/set-new-password" class="button">Reestablecer mi contraseña</a>
             </div>
             <div class="footer">
                 <p>Este es un correo automático, no responda a este mensaje.</p>

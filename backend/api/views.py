@@ -13,6 +13,7 @@ from .emails import (
     send_warranty_close_case_email,
     send_temp_password_email,
 )
+
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
 from .onedrive import get_onedrive_headers
@@ -2617,7 +2618,7 @@ def userChangePassword(request):
             }, status=405)
 
 @csrf_exempt
-def ForgotPassword(request):
+def forgottenPassword(request):
     if request.method == 'POST':
         connection = None
         cursor = None
@@ -2736,6 +2737,80 @@ def ForgotPassword(request):
             if connection:
                 connection.close()
 
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            }, status=405)
+
+@csrf_exempt
+def resetPassword(request):
+    if request.method == 'POST':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
+            
+            user_id = data.get('user_id')
+            new_password = data.get('new_password')
+
+            if not all([user_id, new_password]):
+                return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=400)
+
+            # Establish database connection
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};'
+            )
+            cursor = connection.cursor()
+
+            sql = """
+                UPDATE Warranty.Users
+                SET Password = ?
+                WHERE userID = ?
+            """
+            cursor.execute(sql, (new_password, user_id))
+            connection.commit()
+            return JsonResponse({'message': 'Contraseña actualizada con éxito'}, status=200)
+        
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            
+            print(f"Error: {db_error}")
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
+        
+        except Exception as e:
+            if connection:
+                connection.rollback()
+            
+            print("Error: " + str(e))
+            return JsonResponse({
+                'error': str(e),
+                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                }, status=500)
+     
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
     else:
         return JsonResponse({
             'error': 'Invalid request method',

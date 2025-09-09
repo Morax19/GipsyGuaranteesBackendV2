@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     userLogin,
-    ForgotPassword,
+    forgottenPassword,
+    resetPassword,
     publicRegister,
     warrantyRegister,
     warrantyHistory,
@@ -81,7 +82,8 @@ urlpatterns = [
     #   Get all roles
     path('adminGetUsers/', adminGetUsers, name='admin_get_users'),
     path('adminGetBranches/', adminGetBranches, name='admin_get_branches'),
-    path('ForgotPassword/', ForgotPassword, name='forgot_password'),
+    path('forgottenPassword/', forgottenPassword, name='forgotten_password'),
+    path('resetPassword/', resetPassword, name='reset_password'),
     path('adminGetCustomerByID/', adminGetCustomerByID, name='admin_get_customer_by_id'),
     path('getCustomerByUserID/', getCustomerByUserID, name='get_customer_by_user_id'),
     path('adminGetMainCustomers/', adminGetMainCustomers, name='admin_get_MainCustomers'),
