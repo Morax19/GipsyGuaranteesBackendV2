@@ -1460,7 +1460,7 @@ def technicalServiceHistory(request):
             sql = """
                 SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, TS.lastUpdated, TS.closedDate, 
                         C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription,
-                        W.branchID, I.ItemLookupCode, I.SubDescription3 AS Brand, C.NationalId, C.PhoneNumber, C.EmailAddress
+                        W.branchID, I.BinLocation, I.SubDescription3 AS Brand, C.NationalId, C.PhoneNumber, C.EmailAddress
                 FROM Warranty.technicalService TS
                 JOIN Warranty.Users U ON TS.registerID = U.userID
                 JOIN Warranty.Customer C ON U.CustomerID = C.ID
