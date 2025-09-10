@@ -67,7 +67,7 @@ def create_registration_html(user_name):
                 border-radius: 5px;
             }}
             .button:hover{{
-                background-color: #a2c0bb;
+                background-color: #4e867c;
             }}
         </style>
     </head>
@@ -1472,7 +1472,7 @@ def create_password_reset_html(data):
                 border-radius: 5px;
             }}
             .button:hover{{
-                background-color: #a2c0bb;
+                background-color: #4e867c;
             }}
         </style>
     </head>
