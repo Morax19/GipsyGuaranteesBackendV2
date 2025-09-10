@@ -866,10 +866,27 @@ def adminCreateUsers(request):
             """
             cursor.execute(user_sql, (email_address, password, customer_id, role_id))
 
-            # Commit the transaction if all operations were successful
-            connection.commit()
+            data_for_email = {
+                'user_name': email_address,
+                'first_name': first_name,
+                'last_name': last_name,
+                'email_address': email_address,
+                'address': address,
+                'phone_number': phone_number
+            }
 
-            return JsonResponse({'message': 'Usuario registrado éxitosamente'}, status=201)
+            email = send_user_register_email(data_for_email)
+
+            if email:
+                # Commit the transaction if all operations were successful
+                connection.commit()
+                return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
+            else:
+                print('Ha ocurrido un error al enviar el correo')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido enviar el correo de registro de usuario.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de usuario, por favor inténtelo más tarde.'
+                    }, status=400)
         
         except pyodbc.Error as db_error:
             if connection:
@@ -1196,6 +1213,13 @@ def adminEditBranch(request):
 
 # Technical Service Views
 #   1. Login
+#   2. Get Warranty By ID
+#   3. Technical Service History
+#   4. Technical Service Get Status
+#   5. Technical Service Get Issue
+#   6. Technical Service Open Case
+#   7. Technical Service Update Case
+#   8. Technical Service Close Case
 @csrf_exempt
 def technicalServiceLogin(request):
     if request.method == 'POST':
@@ -2149,8 +2173,8 @@ def publicRegister(request):
             else:
                 print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
-                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
-                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    'error': 'Error: No se ha podido enviar el correo de registro de usuario',
+                    'warning': 'Ha ocurrido un error al enviar el correo de registro de usuario, por favor inténtelo más tarde.'
                     }, status=400)
 
         except pyodbc.Error as db_error:

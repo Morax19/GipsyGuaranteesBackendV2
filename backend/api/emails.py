@@ -206,8 +206,7 @@ def send_user_register_email(data):
             "Gipsy Garantías - Nuevo Registro de Usuario",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
-            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
-            [os.environ.get('EMAIL_WARRANTY_TEST')]
+            [os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), os.environ.get('EMAIL_WARRANTY_TEST')]
         )
 
         msg_intern.content_subtype = "html"
@@ -531,8 +530,7 @@ def send_warranty_register_email(data):
             "Gipsy Garantías - Nuevo Registro de Garantía",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
-            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
-            [os.environ.get('EMAIL_WARRANTY_TEST')]
+            [os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), os.environ.get('EMAIL_WARRANTY_TEST')]
         )
 
         msg_intern.content_subtype = "html"
@@ -803,8 +801,11 @@ def send_warranty_open_case_email(data):
             'Gipsy Garantías - Apertura de Caso Servicio Técnico',
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
-            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), data[email_address]['technical_service']]
-            [os.environ.get('EMAIL_WARRANTY_TEST'), data['email_address']['technical_service']]
+            [
+                os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                data['email_address']['technical_service'],
+                os.environ.get('EMAIL_WARRANTY_TEST')
+            ]
         )
 
         msg_intern.content_subtype = 'html'
@@ -1091,8 +1092,11 @@ def send_warranty_update_case_email(data):
             'Gipsy Garantías - Actualización de Caso Servicio Técnico',
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
-            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), data[email_address]['technical_service']]
-            [os.environ.get('EMAIL_WARRANTY_TEST'), data['email_address']['technical_service']]
+            [
+                os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                data['email_address']['technical_service'],
+                os.environ.get('EMAIL_WARRANTY_TEST')
+            ]
         )
 
         msg_intern.content_subtype = 'html'
@@ -1377,8 +1381,11 @@ def send_warranty_close_case_email(data):
             'Gipsy Garantías - Cierre de Caso Servicio Técnico',
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
-            #[os.environ.get('EMAIL_WARRANTY_GIPSYCORP'), data[email_address]['technical_service']]
-            [os.environ.get('EMAIL_WARRANTY_TEST'), data['email_address']['technical_service']]
+            [
+                os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                data['email_address']['technical_service'],
+                os.environ.get('EMAIL_WARRANTY_TEST')
+            ]
         )
 
         msg_intern.content_subtype = 'html'
