@@ -61,10 +61,13 @@ def create_registration_html(user_name):
                 display: inline-block;
                 padding: 10px 20px;
                 margin-top: 20px;
-                background-color: #007bff;
+                background-color: #619990;
                 color: white !important;
                 text-decoration: none;
                 border-radius: 5px;
+            }}
+            .button:hover{{
+                background-color: #a2c0bb;
             }}
         </style>
     </head>
@@ -79,7 +82,7 @@ def create_registration_html(user_name):
                 <p>Con Gipsy Garantías, puede registrar de manera eficiente las garantías de los productos que ha comprado, visualizar su historial de garantías y consultar la información sobre el Servicio Técnico disponible en caso de requerirlo.</p>
             </div>
             <div style="text-align: center;">
-                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net" class="button">Ir a la aplicación</a>
+                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net" class="button"><strong>Ir a la aplicación</strong></a>
             </div>
             <div class="footer">
                 <p>Este es un correo automático, por favor no responda a este mensaje.</p>
@@ -1463,10 +1466,13 @@ def create_password_reset_html(data):
                 display: inline-block;
                 padding: 10px 20px;
                 margin-top: 20px;
-                background-color: #007bff;
+                background-color: #619990;
                 color: white !important;
                 text-decoration: none;
                 border-radius: 5px;
+            }}
+            .button:hover{{
+                background-color: #a2c0bb;
             }}
         </style>
     </head>
@@ -1481,10 +1487,13 @@ def create_password_reset_html(data):
                 <div class="password-section">
                     <span class="password-box">{data['temp_password']}</span>
                 </div>
-                <p>Para su seguridad, le recomendamos encarecidamente que reestablezca su contraseña en la aplicación lo más pronto posible.</p>
+                <p>
+                    Este código es válido durante 30 minutos, una vez expirado deberá solicitar uno nuevo.
+                    Para su seguridad, le recomendamos encarecidamente que reestablezca su contraseña en la aplicación lo más pronto posible.
+                </p>
             </div>
             <div style="text-align: center;">
-                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net/set-new-password" class="button">Reestablecer mi contraseña</a>
+                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net/set-new-password" class="button"><strong>Reestablecer mi contraseña</strong></a>
             </div>
             <div class="footer">
                 <p>Este es un correo automático, no responda a este mensaje.</p>
