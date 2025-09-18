@@ -567,7 +567,7 @@ def adminGetMainCustomers(request):
                 SELECT DISTINCT TOP 15 C.ID, C.FirstName + '' + C.LastName AS FullName, C.isRetail
                 FROM Main.Customer C
                 JOIN Warranty.Inventory I ON C.ID = I.customerID
-                WHERE C.FirstName + '' + C.LastName != ''
+                WHERE C.FirstName + '' + C.LastName != ' '
                 ORDER BY FullName
             """
 
