@@ -1855,6 +1855,7 @@ def technicalServiceCloseCase(request):
             try:
                 data = json.loads(request.body)
             except JSONDecodeError:
+                print("Error aca")
                 return JsonResponse({
                     'error': 'JSON Inválido',
                     'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -1866,18 +1867,9 @@ def technicalServiceCloseCase(request):
             issue_resolution_details = data.get('issueResolutionDetails')
             status_id = 3
             required_change = data.get('requiredChange')
-            
-            if required_change == 'true':
-                required_change = True
-            elif  required_change == 'false':
-                required_change = False
-            else:
-                return JsonResponse({
-                    'error': 'Error: Ha ocurrido un error con el campo requiredChange.',
-                    'warning': 'Ha ocurrido un error al cerrar el caso.'
-                }, status=400)
         
             if not all([case_number, issue_id, issue_resolution_details, required_change]):
+                print("Error aqui")
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
