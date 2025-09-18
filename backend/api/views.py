@@ -2231,6 +2231,7 @@ def warrantyRegister(request):
             invoice_img = request.FILES['invoiceIMG']
             used_count = 0
             invoice_number = request.POST['invoiceNumber']
+            main_customer = request.POST['mainCustomerID']
 
             if not all([
                 register_id,
@@ -2242,45 +2243,13 @@ def warrantyRegister(request):
                 product_brand,
                 product_barcode,
                 invoice_img,
-                invoice_number
+                invoice_number,
+                main_customer
             ]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=400)
-
-            # Almacenamiento de facturas en OneDrive
-            headers = get_onedrive_headers()
-            ext = invoice_img.name.split('.')[-1]
-            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            safe_name = invoice_img.name.replace(" ", "_").replace("/", "_")
-            unique_name = f"{timestamp}_{safe_name}"
-            folder_path = "/GARANTIAS/Facturas"
-            upload_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:/{folder_path}/{unique_name}:/content"
-            
-            resp = requests.put(upload_url, headers=headers, data=invoice_img.read())
-            if resp.status_code not in (200, 201):
-                return JsonResponse({
-                    'error': 'Error al subir la factura a OneDrive',
-                    'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
-                    'details': resp.text
-                    }, status=500)
-
-            data = resp.json()
-            invoice_copy_path = data["webUrl"]
-
-            # Generación de enlace público para la factura
-            file_id = data['id']
-
-            create_link_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
-
-            body = {
-                'type': 'view',
-                'scope': 'anonymous'
-            }
-
-            response = requests.post(create_link_url, headers=headers, json=body)
-            public_invoice_url = response.json()['link']['webUrl']
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -2291,56 +2260,113 @@ def warrantyRegister(request):
             )
             cursor = connection.cursor()
 
-            # Check if the warranty already exists by invoiceNumber
-            cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ? AND ItemId = ?", (invoice_number, item_id))
-            if cursor.fetchone()[0] > 0:
-                return JsonResponse({
-                    'error': 'Ya existe una garantía para este producto asociada a esta factura.',
-                    'warning': 'Ya existe una garantía para este producto asociada a esta factura.'
-                    }, status=400)
-
-            sql = """
-                INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
-                OUTPUT INSERTED.WarrantyNumber
-                VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
+            inventory_sql = """
+                SELECT quantity
+                FROM Warranty.Inventory
+                WHERE customerID = ? AND itemID = ? AND isRetail = ?
             """
-            cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
-            warranty_number = cursor.fetchval()
-            
-            # Extra fields needed for the email
-            user_name = request.POST['userFirstName']
-            email_address = request.POST['emailAddress']
-            store_name = request.POST['storeName']
-            branch_name = request.POST['branchName']
-            store_rif = f"{request.POST['RIFtype']} - {request.POST['RIF']}"
-            product_model = request.POST['productModel']
+            cursor.execute(inventory_sql, (main_customer, item_id, is_retail))
 
-            data_for_email = {
-                'user_name': user_name,
-                'email_address': email_address,
-                'warranty_id': warranty_number,
-                'store_name': store_name,
-                'branch_name': branch_name,
-                'store_rif': store_rif,
-                'purchase_date': purchase_date,
-                'invoice_number': invoice_number,
-                'product_brand': product_brand,
-                'product_model': product_model,
-                'product_barcode': product_barcode,
-                'invoice_img_path': public_invoice_url
-            }
+            inventory_quantity = cursor.fetchval()
 
-            email = send_warranty_register_email(data_for_email)
-
-            if email:
-                connection.commit()
-                return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
-            else:
-                print('Ha ocurrido un error al enviar el correo')
+            if inventory_quantity == None or inventory_quantity < 1:
+                print("No hay garantías disponibles en el inventario.")
                 return JsonResponse({
-                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
-                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    'error': 'Error: No hay garantías disponibles en el inventario.',
+                    'warning': 'No existen garantías disponibles en el inventario para este producto.',
                     }, status=400)
+            else:
+                # Almacenamiento de facturas en OneDrive
+                headers = get_onedrive_headers()
+                ext = invoice_img.name.split('.')[-1]
+                timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                safe_name = invoice_img.name.replace(" ", "_").replace("/", "_")
+                unique_name = f"{timestamp}_{safe_name}"
+                folder_path = "/GARANTIAS/Facturas"
+                upload_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:/{folder_path}/{unique_name}:/content"
+                
+                resp = requests.put(upload_url, headers=headers, data=invoice_img.read())
+                if resp.status_code not in (200, 201):
+                    return JsonResponse({
+                        'error': 'Error al subir la factura a OneDrive',
+                        'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
+                        'details': resp.text
+                        }, status=500)
+
+                data = resp.json()
+                invoice_copy_path = data["webUrl"]
+
+                # Generación de enlace público para la factura
+                file_id = data['id']
+
+                create_link_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
+
+                body = {
+                    'type': 'view',
+                    'scope': 'anonymous'
+                }
+
+                response = requests.post(create_link_url, headers=headers, json=body)
+                public_invoice_url = response.json()['link']['webUrl']
+
+                # Check if the warranty already exists by invoiceNumber
+                cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ? AND ItemId = ?", (invoice_number, item_id))
+                if cursor.fetchone()[0] > 0:
+                    return JsonResponse({
+                        'error': 'Ya existe una garantía para este producto asociada a esta factura.',
+                        'warning': 'Ya existe una garantía para este producto asociada a esta factura.'
+                        }, status=400)
+
+                sql = """
+                    INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
+                    OUTPUT INSERTED.WarrantyNumber
+                    VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
+                """
+                cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
+                warranty_number = cursor.fetchval()
+
+                # Reduce the quantity of available warranties in the inventory
+                update_inventory_sql = """
+                    UPDATE Warranty.Inventory
+                    SET quantity = quantity - 1
+                    WHERE customerID = ? AND itemID = ? AND isRetail = ?
+                """
+                cursor.execute(update_inventory_sql, (main_customer, item_id, is_retail))
+                
+                # Extra fields needed for the email
+                user_name = request.POST['userFirstName']
+                email_address = request.POST['emailAddress']
+                store_name = request.POST['storeName']
+                branch_name = request.POST['branchName']
+                store_rif = f"{request.POST['RIFtype']} - {request.POST['RIF']}"
+                product_model = request.POST['productModel']
+
+                data_for_email = {
+                    'user_name': user_name,
+                    'email_address': email_address,
+                    'warranty_id': warranty_number,
+                    'store_name': store_name,
+                    'branch_name': branch_name,
+                    'store_rif': store_rif,
+                    'purchase_date': purchase_date,
+                    'invoice_number': invoice_number,
+                    'product_brand': product_brand,
+                    'product_model': product_model,
+                    'product_barcode': product_barcode,
+                    'invoice_img_path': public_invoice_url
+                }
+
+                email = send_warranty_register_email(data_for_email)
+
+                if email:
+                    connection.commit()
+                    return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
+                else:
+                    print('Ha ocurrido un error al enviar el correo')
+                    return JsonResponse({
+                        'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
+                        'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                        }, status=400)
         
         except pyodbc.Error as db_error:
             if connection:
