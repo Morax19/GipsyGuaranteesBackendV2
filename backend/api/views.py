@@ -1865,8 +1865,19 @@ def technicalServiceCloseCase(request):
             issue_id = data.get('issueID')
             issue_resolution_details = data.get('issueResolutionDetails')
             status_id = 3
+            required_change = data.get('requiredChange')
             
-            if not all([case_number, issue_id, issue_resolution_details]):
+            if required_change == 'true':
+                required_change = True
+            elif  required_change == 'false':
+                required_change = False
+            else:
+                return JsonResponse({
+                    'error': 'Error: Ha ocurrido un error con el campo requiredChange.',
+                    'warning': 'Ha ocurrido un error al cerrar el caso.'
+                }, status=400)
+        
+            if not all([case_number, issue_id, issue_resolution_details, required_change]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -1883,10 +1894,10 @@ def technicalServiceCloseCase(request):
 
             sql = """
                 UPDATE Warranty.technicalService
-                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE()
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE(), requiredChange = ?
                 WHERE CaseNumber = ?
             """
-            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, case_number))
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, required_change, case_number))
             
             if cursor.rowcount == 0:
                 return JsonResponse({
