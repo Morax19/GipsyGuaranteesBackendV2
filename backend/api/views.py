@@ -569,6 +569,14 @@ def adminGetMainCustomers(request):
                 JOIN Warranty.Inventory I ON C.ID = I.customerID
                 ORDER BY FullName
             """
+
+            sql = """
+                SELECT TOP 20 DISTINCT(C.ID), C.FirstName + '' + C.LastName AS FullName, C.isRetail
+                FROM Main.Customer C
+                JOIN Warranty.Inventory I ON C.ID = I.customerID
+                ORDER BY FullName
+            """
+
             cursor.execute(sql)
 
             customers = cursor.fetchall()
