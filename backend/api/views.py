@@ -1742,30 +1742,54 @@ def technicalServiceOpenCaseWarranty(request):
 @csrf_exempt
 @jwt_required
 def technicalServiceUpdateCase(request):
-    if request.method == 'PUT':
+    if request.method == 'POST':
         connection = None
         cursor = None
         
-        try:
-            try:
-                data = json.loads(request.body)
-            except JSONDecodeError:
-                return JsonResponse({
-                    'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
-                    }, status=400)
-            
+        try:            
             # Mandatory fields check
-            case_number = data.get('CaseNumber')
-            issue_id = data.get('issueID')
-            issue_resolution_details = data.get('issueResolutionDetails')
-            status_id = data.get('statusID')
+            case_number = request.POST['CaseNumber']
+            issue_id = request.POST['issueID']
+            issue_resolution_details = request.POST['issueResolutionDetails']
+            status_id = request.POST['statusID']
+            diagnostic_img = request.FILES['diagnosticIMG']
 
-            if not all([case_number, issue_id, issue_resolution_details, status_id]):
+            if not all([case_number, issue_id, issue_resolution_details, status_id, diagnostic_img]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=400)
+
+            headers = get_onedrive_headers()
+            ext = diagnostic_img.name.split('.')[-1]
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            safe_name = diagnostic_img.name.replace(" ", "_").replace("/", "_")
+            unique_name = f"{timestamp}_{safe_name}"
+            folder_path = "/GARANTIAS/Casos"
+            upload_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:/{folder_path}/{unique_name}:/content"
+        
+            resp = requests.put(upload_url, headers=headers, data=diagnostic_img.read())
+            if resp.status_code not in (200, 201):
+                return JsonResponse({
+                    'error': 'Error al subir la factura a OneDrive',
+                    'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
+                    'details': resp.text
+                    }, status=500)
+
+            data = resp.json()
+            diagnostic_copy_path = data["webUrl"]
+
+            file_id = data['id']
+
+            create_link_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
+
+            body = {
+                'type': 'view',
+                'scope': 'anonymous'
+            }
+
+            response = requests.post(create_link_url, headers=headers, json=body)
+            public_diagnostic_url = response.json()['link']['webUrl']
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -1779,10 +1803,10 @@ def technicalServiceUpdateCase(request):
 
             sql = """
                 UPDATE Warranty.technicalService
-                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE()
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), diagnosticCopyPath = ?
                 WHERE CaseNumber = ?
             """
-            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), int(status_id), int(case_number)))
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), int(status_id), public_diagnostic_url, int(case_number)))
             
             if cursor.rowcount == 0:
                 return JsonResponse({
@@ -1791,18 +1815,18 @@ def technicalServiceUpdateCase(request):
                 }, status=404)
 
             data_for_email = {
-                'user_name': data.get('Customer'),
+                'user_name': request.POST['Customer'],
                 'email_address': {
-                    'technical_service': data.get('TechnicalServiceEmail'),
-                    'customer': data.get('CustomerEmail')
+                    'technical_service': request.POST['TechnicalServiceEmail'],
+                    'customer': request.POST['CustomerEmail']
                 },
                 'case_number': case_number,
-                'warranty_code': data.get('WarrantyID'),
-                'store_name': data.get('StoreName'),
-                'product_name': data.get('ProductName'),
-                'reception_date': data.get('ReceptionDate'),
-                'case_status': data.get('statusDescription'),
-                'issue_description': data.get('issueDescription'),
+                'warranty_code': request.POST['WarrantyID'],
+                'store_name': request.POST['StoreName'],
+                'product_name': request.POST['ProductName'],
+                'reception_date': request.POST['ReceptionDate'],
+                'case_status': request.POST['statusDescription'],
+                'issue_description': request.POST['issueDescription'],
                 'issue_resolution_details': issue_resolution_details
             }
 
@@ -1821,7 +1845,6 @@ def technicalServiceUpdateCase(request):
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
-            
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
@@ -1850,33 +1873,57 @@ def technicalServiceUpdateCase(request):
 @csrf_exempt
 @jwt_required
 def technicalServiceCloseCase(request):
-    if request.method == 'PUT':
+    if request.method == 'POST':
         connection = None
         cursor = None
         
-        try:
-            try:
-                data = json.loads(request.body)
-            except JSONDecodeError:
-                print("Error aca")
-                return JsonResponse({
-                    'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
-                    }, status=400)
-            
+        try:            
             # Mandatory fields check
-            case_number = data.get('CaseNumber')
-            issue_id = data.get('issueID')
-            issue_resolution_details = data.get('issueResolutionDetails')
+            case_number = request.POST['CaseNumber']
+            issue_id = request.POST['issueID']
+            issue_resolution_details = request.POST['issueResolutionDetails']
             status_id = 3
-            required_change = data.get('requiredChange')
+            diagnostic_img = request.FILES['diagnosticIMG']
+            required_change = request.POST['requiredChange']
         
-            if not all([case_number, issue_id, issue_resolution_details, required_change]):
+            if not all([case_number, issue_id, issue_resolution_details, diagnostic_img, required_change]):
                 print("Error aqui")
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
                 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
                 }, status=400)
+
+            headers = get_onedrive_headers()
+            ext = diagnostic_img.name.split('.')[-1]
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            safe_name = diagnostic_img.name.replace(" ", "_").replace("/", "_")
+            unique_name = f"{timestamp}_{safe_name}"
+            folder_path = "/GARANTIAS/Casos"
+            upload_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/root:/{folder_path}/{unique_name}:/content"
+        
+            resp = requests.put(upload_url, headers=headers, data=diagnostic_img.read())
+            if resp.status_code not in (200, 201):
+                return JsonResponse({
+                    'error': 'Error al subir la factura a OneDrive',
+                    'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
+                    'details': resp.text
+                    }, status=500)
+
+            data = resp.json()
+            diagnostic_copy_path = data["webUrl"]
+
+            file_id = data['id']
+
+            create_link_url = f"https://graph.microsoft.com/v1.0/users/desarrollo@grupogipsy.com/drive/items/{file_id}/createLink"
+
+            body = {
+                'type': 'view',
+                'scope': 'anonymous'
+            }
+
+            response = requests.post(create_link_url, headers=headers, json=body)
+            public_diagnostic_url = response.json()['link']['webUrl']
+
 
             connection = pyodbc.connect(
                 f'Driver={{ODBC Driver 18 for SQL Server}};'
@@ -1889,10 +1936,10 @@ def technicalServiceCloseCase(request):
 
             sql = """
                 UPDATE Warranty.technicalService
-                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE(), requiredChange = ?
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE(), requiredChange = ?, diagnosticCopyPath = ?
                 WHERE CaseNumber = ?
             """
-            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, required_change, case_number))
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, required_change, public_diagnostic_url, case_number))
             
             if cursor.rowcount == 0:
                 return JsonResponse({
@@ -1901,20 +1948,21 @@ def technicalServiceCloseCase(request):
                 }, status=404)
 
             data_for_email = {
-                'user_name': data.get('Customer'),
+                'user_name': request.POST['Customer'],
                 'email_address': {
-                    'technical_service': data.get('TechnicalServiceEmail'),
-                    'customer': data.get('CustomerEmail')
+                    'technical_service': request.POST['TechnicalServiceEmail'],
+                    'customer': request.POST['CustomerEmail']
                 },
                 'case_number': case_number,
-                'warranty_code': data.get('WarrantyID'),
-                'store_name': data.get('StoreName'),
-                'product_name': data.get('ProductName'),
-                'reception_date': data.get('ReceptionDate'),
-                'case_status': data.get('statusDescription'),
-                'issue_description': data.get('issueDescription'),
+                'warranty_code': request.POST['WarrantyID'],
+                'store_name': request.POST['StoreName'],
+                'product_name': request.POST['ProductName'],
+                'reception_date': request.POST['ReceptionDate'],
+                'case_status': request.POST['statusDescription'],
+                'issue_description': request.POST['issueDescription'],
                 'issue_resolution_details': issue_resolution_details
             }
+
             email = send_warranty_close_case_email(data_for_email)
 
             if email:
@@ -2325,7 +2373,7 @@ def warrantyRegister(request):
                     OUTPUT INSERTED.WarrantyNumber
                     VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
                 """
-                cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, invoice_copy_path, used_count, invoice_number))
+                cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, public_invoice_url, used_count, invoice_number))
                 warranty_number = cursor.fetchval()
 
                 # Reduce the quantity of available warranties in the inventory
