@@ -571,7 +571,7 @@ def adminGetMainCustomers(request):
             """
 
             sql = """
-                SELECT TOP 20 DISTINCT(C.ID), C.FirstName + '' + C.LastName AS FullName, C.isRetail
+                SELECT TOP 20 DISTINCT C.ID, C.FirstName + '' + C.LastName AS FullName, C.isRetail
                 FROM Main.Customer C
                 JOIN Warranty.Inventory I ON C.ID = I.customerID
                 ORDER BY FullName
