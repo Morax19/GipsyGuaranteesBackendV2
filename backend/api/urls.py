@@ -30,6 +30,8 @@ from .views import (
     technicalServiceHistory,
     technicalServiceGetStatus,
     technicalServiceGetIssue,
+    technicalServiceCreateIssue,
+    technicalServiceEditIssue,
 )
 
 urlpatterns = [
@@ -58,7 +60,9 @@ urlpatterns = [
     path('technicalServiceHistory/', technicalServiceHistory, name='technical_service_history'),
     path('technicalServiceGetStatus/', technicalServiceGetStatus, name='technical_service_get_status'),
     path('technicalServiceGetIssue/', technicalServiceGetIssue, name='technical_service_get_issue'),
-
+    path('technicalServiceCreateIssue/', technicalServiceCreateIssue, name='technical_service_create_issue'),
+    path('technicalServiceEditIssue/', technicalServiceEditIssue, name='technical_service_edit_issue'),
+    
     # Administration paths and endpoints
     #   Login
     #   Create Users

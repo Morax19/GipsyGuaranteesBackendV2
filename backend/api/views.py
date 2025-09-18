@@ -445,9 +445,9 @@ def getCustomerByUserID(request):
             """
             cursor.execute(sql, customer_id)
             customer = cursor.fetchone()
-            connection.commit()
             
             if customer:
+                connection.commit()
                 customer_dict = dict(zip([column[0] for column in cursor.description], customer))
                 return JsonResponse(customer_dict, safe=False)
             else:
@@ -1630,6 +1630,153 @@ def technicalServiceGetIssue(request):
 
 @csrf_exempt
 @jwt_required
+def technicalServiceCreateIssue(request):
+    if request.method == 'POST':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
+            
+            issue_description = data.get('IssueDescription')
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                INSERT INTO Warranty.Issue (IssueDescription)
+                OUTPUT INSERTED.IssueId
+                VALUES (?);
+            """
+            cursor.execute(sql, (issue_description,))
+            issue_id = cursor.fetchval()
+
+            if issue_id:
+                connection.commit()
+                return JsonResponse({
+                    'message': 'Se ha creado la falla exitosamente'
+                    }, status=200)
+            else:
+                print('Ha ocurrido un error al crear la falla')
+                return JsonResponse({
+                    'error': 'Error: No se ha podido crear la falla',
+                    'warning': 'Ha ocurrido un error al crear la falla.'
+                    }, status=400)
+            
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+
+            print(db_error)
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
+
+        except Exception as e:
+            if connection:
+                connection.rollback()
+            
+            print(str(e))
+            return JsonResponse({
+                'error': str(e),
+                'warning': f'Ha ocurrido un error, por favor inténtelo más tarde. Error: {str(e)}'
+                }, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
+            }, status=405)
+
+@csrf_exempt
+@jwt_required
+def technicalServiceEditIssue(request):
+    if request.method == 'PUT':
+        connection = None
+        cursor = None
+
+        try:
+            try:
+                data = json.loads(request.body)
+            except JSONDecodeError:
+                return JsonResponse({
+                    'error': 'JSON Inválido',
+                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    }, status=400)
+            
+            issue_id = data.get('IssueId')
+            issue_description = data.get('IssueDescription')
+
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                UPDATE Warranty.Issue
+                SET IssueDescription = ?
+                WHERE IssueId = ?
+            """
+            cursor.execute(sql, (issue_description, issue_id))
+
+            connection.commit()
+            return JsonResponse({
+                'message': 'Se ha editado la falla exitosamente'
+                }, status=200)
+            
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+
+            print(db_error)
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                }, status=500)
+
+        except Exception as e:
+            if connection:
+                connection.rollback()
+            
+            print(str(e))
+            return JsonResponse({
+                'error': str(e),
+                'warning': f'Ha ocurrido un error, por favor inténtelo más tarde. Error: {str(e)}'
+                }, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
+            }, status=405)
+
+@csrf_exempt
+@jwt_required
 def technicalServiceOpenCaseWarranty(request):
     if request.method == 'POST':
         connection = None
@@ -1701,7 +1848,7 @@ def technicalServiceOpenCaseWarranty(request):
 
             if email:
                 connection.commit()
-                return JsonResponse({'message': 'Se ha abierto el caso éxitosamente'}, status=200)
+                return JsonResponse({'message': 'Se ha abierto el caso exitosamente'}, status=200)
             else:
                 print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
