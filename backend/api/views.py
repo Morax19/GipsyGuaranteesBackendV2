@@ -564,14 +564,7 @@ def adminGetMainCustomers(request):
             cursor = connection.cursor()
 
             sql = """
-                SELECT DISTINCT(C.ID), C.FirstName + '' + C.LastName AS FullName, C.isRetail
-                FROM Main.Customer C
-                JOIN Warranty.Inventory I ON C.ID = I.customerID
-                ORDER BY FullName
-            """
-
-            sql = """
-                SELECT TOP 20 DISTINCT C.ID, C.FirstName + '' + C.LastName AS FullName, C.isRetail
+                SELECT DISTINCT TOP 15 C.ID, C.FirstName + '' + C.LastName AS FullName, C.isRetail
                 FROM Main.Customer C
                 JOIN Warranty.Inventory I ON C.ID = I.customerID
                 ORDER BY FullName
@@ -582,6 +575,7 @@ def adminGetMainCustomers(request):
             customers = cursor.fetchall()
             if customers:
                 customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
+                print(customer_list)
                 return JsonResponse(customer_list, safe=False)
             else:
                 return JsonResponse({
