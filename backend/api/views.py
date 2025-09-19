@@ -576,7 +576,6 @@ def adminGetMainCustomers(request):
             customers = cursor.fetchall()
             if customers:
                 customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
-                print(customer_list)
                 return JsonResponse(customer_list, safe=False)
             else:
                 return JsonResponse({
