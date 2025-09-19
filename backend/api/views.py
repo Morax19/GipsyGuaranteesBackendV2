@@ -50,7 +50,7 @@ def adminGetRoles(request):
                 return JsonResponse(role_list, safe=False)
             else:
                 return JsonResponse({
-                    'error': 'Ha ocurrido un error, por favor inténtelo más tarde.',
+                    'error': 'Error: No se han encontrado los roles.',
                     'warning': 'Error: No se han encontrado los roles.'
                     }, status=404) 
         
@@ -60,14 +60,13 @@ def adminGetRoles(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'                
                 }, status=500)
         
         except Exception as e:
-            print(f"Error: {e}") 
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                
+                'warning': f'Ha ocurrido un error: {str(e)}'              
                 }, status=500)
         
         finally:
@@ -78,7 +77,7 @@ def adminGetRoles(request):
     else:
         return JsonResponse({
             'error': 'Error: Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'            
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'            
             }, status=405)
 
 @jwt_required
@@ -109,7 +108,7 @@ def adminGetUsers(request):
             else:
                 return JsonResponse({
                     'error': 'Error: No se han encontrado usuarios.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                    
+                    'warning': 'Error: No se han encontrado usuarios.'                    
                     }, status=404)
             
         except pyodbc.Error as db_error:
@@ -118,13 +117,13 @@ def adminGetUsers(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'                
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'                
                 }, status=500)
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -135,7 +134,7 @@ def adminGetUsers(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @jwt_required
@@ -166,7 +165,7 @@ def adminGetBranches(request):
             else:
                 return JsonResponse({
                     'error': 'No se han encontrado sucursales',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: No se han encontrado sucursales.'
                     }, status=404)
 
         except pyodbc.Error as db_error:
@@ -175,13 +174,13 @@ def adminGetBranches(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)         
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500) 
         
         finally:
@@ -192,7 +191,7 @@ def adminGetBranches(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
         }, status=405)
 
 @jwt_required
@@ -204,7 +203,7 @@ def getBranchByCustomerID(request):
         if not all([customer_id, isRetail]):
             return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
         connection = None
@@ -234,7 +233,7 @@ def getBranchByCustomerID(request):
             else:
                 return JsonResponse({
                     'error': 'Error: Sucursales no encontradas',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: Sucursales no encontradas'
                     }, status=404)
         
         except pyodbc.Error as db_error:
@@ -243,13 +242,13 @@ def getBranchByCustomerID(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)         
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500) 
         
         finally:
@@ -260,7 +259,7 @@ def getBranchByCustomerID(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'            
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'            
             }, status=405)
 
 @jwt_required
@@ -271,7 +270,7 @@ def getProductByBarCode(request):
         if not barCode:
             return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400) 
 
         connection = None
@@ -302,7 +301,7 @@ def getProductByBarCode(request):
             else:
                 return JsonResponse({
                     'error': 'Error: No se ha encontrado el producto.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: No se ha encontrado el producto.'
                     }, status=404)
 
         except pyodbc.Error as db_error:
@@ -311,13 +310,13 @@ def getProductByBarCode(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)            
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500) 
         
         finally:
@@ -328,7 +327,7 @@ def getProductByBarCode(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @jwt_required
@@ -340,7 +339,7 @@ def getBranchByCustomerID(request):
         if not all([customer_id, isRetail]):
             return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
         connection = None
@@ -369,8 +368,8 @@ def getBranchByCustomerID(request):
                 return JsonResponse(branchesByIDList, safe=False)
             else:
                 return JsonResponse({
-                    'error': 'Error: No se han encontrado sucursales.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'error': 'Error: No se han encontrado sucursales asociadas a esta compañía.',
+                    'warning': 'Error: No se han encontrado sucursales asociadas a esta compañía.'
                 }, status=404)
 
         except pyodbc.Error as db_error:
@@ -379,13 +378,13 @@ def getBranchByCustomerID(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500) 
 
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -396,7 +395,7 @@ def getBranchByCustomerID(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @jwt_required
@@ -406,8 +405,8 @@ def getCustomerByUserID(request):
 
         if not user_id:
             return JsonResponse({
-                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'error': 'Error: Ha ocurrido un error con los campos requeridos. (userID)',
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
         
         connection = None
@@ -434,8 +433,8 @@ def getCustomerByUserID(request):
 
             if not customer_id:
                 return JsonResponse({
-                    'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'error': 'Error: Ha ocurrido un error con los campos requeridos. (customerID)',
+                    'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                     }, status=400)
 
             sql = """
@@ -453,23 +452,22 @@ def getCustomerByUserID(request):
             else:
                 return JsonResponse({
                     'error': 'Error: No se ha encontrado al cliente.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: No se ha encontrado al cliente.'
                     }, status=404)  
         
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
 
-            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)  
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -480,7 +478,7 @@ def getCustomerByUserID(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @jwt_required
@@ -490,8 +488,8 @@ def adminGetCustomerByID(request):
 
         if not customer_id:
             return JsonResponse({
-                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'error': 'Error: Ha ocurrido un error con los campos requeridos. (customerID)',
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
         
         connection = None
@@ -519,7 +517,7 @@ def adminGetCustomerByID(request):
             else:
                 return JsonResponse({
                     'error': 'Error: No se encontró al cliente.',
-                    'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                    'warning': 'Error: No se encontró al cliente.'
                     }, status=404)
 
         except pyodbc.Error as db_error:
@@ -528,13 +526,13 @@ def adminGetCustomerByID(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
             }, status=500)
 
         finally:
@@ -545,7 +543,7 @@ def adminGetCustomerByID(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'waring': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'waring': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @jwt_required
@@ -580,7 +578,7 @@ def adminGetMainCustomers(request):
             else:
                 return JsonResponse({
                     'error': 'Error: No se han encontrado las compañías.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: No se han encontrado las compañías.'
                     }, status=404)
             
         except pyodbc.Error as db_error:
@@ -589,13 +587,13 @@ def adminGetMainCustomers(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -606,7 +604,8 @@ def adminGetMainCustomers(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'}, status=405)
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
+            }, status=405)
     
 @jwt_required
 def adminGetMainCustomersRetail(request):
@@ -639,7 +638,7 @@ def adminGetMainCustomersRetail(request):
             else:
                 return JsonResponse({
                     'error': 'Error: No se han encontrado las compañías.',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: No se han encontrado las compañías.'
                     }, status=404)
 
         except pyodbc.Error as db_error:
@@ -648,13 +647,13 @@ def adminGetMainCustomersRetail(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)        
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -665,7 +664,7 @@ def adminGetMainCustomersRetail(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
     
 # Admin Views
@@ -686,7 +685,7 @@ def adminLogin(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             email_address = data.get('EmailAddress')
@@ -695,7 +694,7 @@ def adminLogin(request):
             if not all([email_address, password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             connection = pyodbc.connect(
@@ -754,10 +753,13 @@ def adminLogin(request):
 
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
             if not jwt_secret:
-                return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
+                return JsonResponse({
+                    'error': 'Server misconfiguration: missing JWT secret key',
+                    'warning': 'Error al generar el token de sesión.'
+                    }, status=404)
             
             return JsonResponse({
-                'message': 'Inicio de sesión éxitoso',
+                'message': 'Inicio de sesión exitoso',
                 'access_token': access_token
                 }, status=200)
         
@@ -765,16 +767,15 @@ def adminLogin(request):
             if connection:
                 connection.rollback()
 
-            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -785,7 +786,7 @@ def adminLogin(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -801,7 +802,7 @@ def adminCreateUsers(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
 
             # Mandatory fields
@@ -816,7 +817,7 @@ def adminCreateUsers(request):
             if not all([first_name, last_name, email_address, password, role_id]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
             
             # Optional fields
@@ -844,8 +845,8 @@ def adminCreateUsers(request):
             cursor.execute("SELECT COUNT(*) FROM Warranty.Customer WHERE NationalId = ?", (national_id,))
             if cursor.fetchone()[0] > 0:
                 return JsonResponse({
-                    'error': 'Ya existe un usuario asociado a esta cédula de identidad',
-                    'warning': 'Ya existe un usuario asociado a esta cédula de identidad'
+                    'error': 'Ya existe un usuario asociado a este documento de identificación.',
+                    'warning': 'Ya existe un usuario asociado a este documento de identificación.'
                 }, status=400)
 
             # Begin a transaction for atomic insertion
@@ -884,7 +885,6 @@ def adminCreateUsers(request):
                 connection.commit()
                 return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
             else:
-                print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
                     'error': 'Error: No se ha podido enviar el correo de registro de usuario.',
                     'warning': 'Ha ocurrido un error al enviar el correo de registro de usuario, por favor inténtelo más tarde.'
@@ -896,7 +896,7 @@ def adminCreateUsers(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, inténtelo más tarde. (DB Error)'
                 }, status=500)
             
         except Exception as e:
@@ -905,7 +905,7 @@ def adminCreateUsers(request):
 
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
             
         finally:
@@ -916,7 +916,7 @@ def adminCreateUsers(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
             
 @csrf_exempt
@@ -932,7 +932,7 @@ def adminEditUsers(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             # Mandatory fields check
@@ -947,7 +947,7 @@ def adminEditUsers(request):
             if not all([user_id, first_name, last_name, email_address, role_id]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
             
             # Optional fields
@@ -975,10 +975,13 @@ def adminEditUsers(request):
             if not user_info:
                 return JsonResponse({
                     'error': 'Usuario no encontrado',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'}, status=404)
+                    'warning': 'Error: Usuario no encontrado'}, status=404)
             
             if role_id not in [1, 2, 3]:
-                return JsonResponse({'error': 'Invalid role'}, status=400)
+                return JsonResponse({
+                    'error': 'Invalid role',
+                    'warning': 'Error: Valor inválido para el rol'
+                    }, status=400)
             
             customer_id = user_info[0]
             current_email = user_info[1]
@@ -1026,7 +1029,7 @@ def adminEditUsers(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -1035,7 +1038,7 @@ def adminEditUsers(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
             
         finally:
@@ -1046,7 +1049,7 @@ def adminEditUsers(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -1061,7 +1064,7 @@ def adminCreateBranch(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             customerID = data.get('customerID')
@@ -1078,7 +1081,7 @@ def adminCreateBranch(request):
             if customerID is None or not all([RIFtype, RIF, companyName, address, branchDescription]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             connection = pyodbc.connect(
@@ -1094,7 +1097,7 @@ def adminCreateBranch(request):
             if cursor.fetchone()[0] > 0:
                 return JsonResponse({
                     'error': 'Error: Esta sucursal ya existe.',
-                    'warning': 'Esta sucursal ya existe.'
+                    'warning': 'Error: Esta sucursal ya existe.'
                     }, status=400)
 
             sql = """
@@ -1104,7 +1107,7 @@ def adminCreateBranch(request):
             cursor.execute(sql, (customerID, isRetail, RIFtype, RIF, companyName, address, branchDescription))
             connection.commit()
 
-            return JsonResponse({'message': 'Branch created successfully'}, status=201)
+            return JsonResponse({'message': 'Sucusal creada correctamente.'}, status=201)
         
         except pyodbc.Error as db_error:
             if connection:
@@ -1112,7 +1115,7 @@ def adminCreateBranch(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -1121,7 +1124,7 @@ def adminCreateBranch(request):
 
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -1132,7 +1135,7 @@ def adminCreateBranch(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -1145,7 +1148,7 @@ def adminEditBranch(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
 
             branchID = data.get('branchID')
@@ -1163,7 +1166,7 @@ def adminEditBranch(request):
             if customerID is None or not all([branchID, RIFtype, RIF, companyName, address, branchDescription]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             connection = pyodbc.connect(
@@ -1182,7 +1185,7 @@ def adminEditBranch(request):
             cursor.execute(sql, (customerID, isRetail, RIFtype, RIF, companyName, address, branchDescription, branchID))
             connection.commit()
 
-            return JsonResponse({'message': 'Branch updated successfully'}, status=200)
+            return JsonResponse({'message': 'Sucursal actualizada correctamente.'}, status=200)
         
         except pyodbc.Error as db_error:
             if connection:
@@ -1190,7 +1193,7 @@ def adminEditBranch(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
@@ -1199,7 +1202,7 @@ def adminEditBranch(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -1210,7 +1213,7 @@ def adminEditBranch(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 # Technical Service Views
@@ -1234,7 +1237,7 @@ def technicalServiceLogin(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             email_address = data.get('EmailAddress')
@@ -1243,7 +1246,7 @@ def technicalServiceLogin(request):
             if not all([email_address, password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             # Establish database connection
@@ -1283,7 +1286,8 @@ def technicalServiceLogin(request):
             if not password == stored_password:
                 return JsonResponse({
                     'error': 'Nombre de usuario o contraseña inválidos.',
-                    'warning': 'Nombre de usuario o contraseña inválidos.'}, status=401)
+                    'warning': 'Nombre de usuario o contraseña inválidos.'
+                    }, status=401)
 
             # Check if the user has the correct role for this login path
             if user_role != 'Servicio Técnico' and user_role != 'Administrador':
@@ -1292,7 +1296,10 @@ def technicalServiceLogin(request):
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
             if not jwt_secret:
-                return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
+                return JsonResponse({
+                    'error': 'Server misconfiguration: missing JWT secret key',
+                    'warning': 'Error al generar el token de sesión.'
+                    }, status=404)
 
             payload = {
                 'user_id': user_id,
@@ -1305,7 +1312,7 @@ def technicalServiceLogin(request):
             access_token = jwt.encode(payload, jwt_secret, algorithm='HS256')
             
             return JsonResponse({
-                'message': 'Inicio de sesión éxitoso',
+                'message': 'Inicio de sesión exitoso',
                 'access_token': access_token
                 }, status=200)
         
@@ -1315,7 +1322,7 @@ def technicalServiceLogin(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -1324,7 +1331,7 @@ def technicalServiceLogin(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -1335,7 +1342,7 @@ def technicalServiceLogin(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @jwt_required
@@ -1346,7 +1353,7 @@ def technicalServiceGetWarrantyByID(request):
         if not warranty_number:
             return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
         connection = None
@@ -1380,7 +1387,10 @@ def technicalServiceGetWarrantyByID(request):
                 warranty_dict = dict(zip([column[0] for column in cursor.description], warranty))
                 return JsonResponse(warranty_dict, safe=False)
             else:
-                return JsonResponse({'error': 'Garantía no encontrada'}, status=404)
+                return JsonResponse({
+                    'error': 'Garantía no encontrada.',
+                    'warning': 'Grantía no encontrada.'
+                    }, status=404)
 
         except pyodbc.Error as db_error:
             if connection:
@@ -1388,7 +1398,7 @@ def technicalServiceGetWarrantyByID(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)   
 
         except Exception as e:
@@ -1397,7 +1407,7 @@ def technicalServiceGetWarrantyByID(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -1408,7 +1418,7 @@ def technicalServiceGetWarrantyByID(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 def technicalServiceHistory(request):
@@ -1421,7 +1431,7 @@ def technicalServiceHistory(request):
         if not user_id:
             return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
         try:
@@ -1484,7 +1494,10 @@ def technicalServiceHistory(request):
                 ts_list = [dict(zip([column[0] for column in cursor.description], row)) for row in ts_cases]
                 return JsonResponse(ts_list, safe=False)
             else:
-                return JsonResponse({'error': 'No se encontraron resultados'}, status=400)
+                return JsonResponse({
+                    'error': 'Error: No se encontraron resultados',
+                    'warning': 'Error: No se han encontrado resultados'
+                    }, status=400)
 
         except pyodbc.Error as db_error:
             if connection:
@@ -1492,7 +1505,7 @@ def technicalServiceHistory(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
@@ -1501,7 +1514,7 @@ def technicalServiceHistory(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -1512,7 +1525,7 @@ def technicalServiceHistory(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 def technicalServiceGetStatus(request):
@@ -1540,7 +1553,10 @@ def technicalServiceGetStatus(request):
                 status_list = [dict(zip([column[0] for column in cursor.description], row)) for row in status]
                 return JsonResponse(status_list, safe=False)
             else:
-                return JsonResponse({'error': 'No se encontraron resultados'}, status=400)
+                return JsonResponse({
+                    'error': 'Error: No se encontraron resultados',
+                    'warning': 'Error: No se han encontrado resultados.'
+                    }, status=400)
         
         except pyodbc.Error as db_error:
             if connection:
@@ -1548,7 +1564,7 @@ def technicalServiceGetStatus(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -1557,7 +1573,7 @@ def technicalServiceGetStatus(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -1568,7 +1584,7 @@ def technicalServiceGetStatus(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 def technicalServiceGetIssue(request):
@@ -1596,7 +1612,10 @@ def technicalServiceGetIssue(request):
                 issue_list = [dict(zip([column[0] for column in cursor.description], row)) for row in issue]
                 return JsonResponse(issue_list, safe=False)
             else:
-                return JsonResponse({'error': 'No se encontraron resultados'}, status=400)
+                return JsonResponse({
+                    'error': 'Error: No se encontraron resultados.',
+                    'warning': 'Error: No se encontrado resultados.'
+                    }, status=404)
         
         except pyodbc.Error as db_error:
             if connection:
@@ -1604,7 +1623,7 @@ def technicalServiceGetIssue(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -1613,7 +1632,7 @@ def technicalServiceGetIssue(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -1624,7 +1643,7 @@ def technicalServiceGetIssue(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -1640,7 +1659,7 @@ def technicalServiceCreateIssue(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             issue_description = data.get('IssueDescription')
@@ -1664,33 +1683,30 @@ def technicalServiceCreateIssue(request):
             if issue_id:
                 connection.commit()
                 return JsonResponse({
-                    'message': 'Se ha creado la falla exitosamente'
+                    'message': 'Se ha creado la falla correctamente.'
                     }, status=200)
             else:
-                print('Ha ocurrido un error al crear la falla')
                 return JsonResponse({
                     'error': 'Error: No se ha podido crear la falla',
-                    'warning': 'Ha ocurrido un error al crear la falla.'
+                    'warning': 'Error: Ha ocurrido un error al crear la falla.'
                     }, status=400)
             
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
 
-            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
             if connection:
                 connection.rollback()
             
-            print(str(e))
             return JsonResponse({
                 'error': str(e),
-                'warning': f'Ha ocurrido un error, por favor inténtelo más tarde. Error: {str(e)}'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -1717,7 +1733,7 @@ def technicalServiceEditIssue(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             issue_id = data.get('IssueId')
@@ -1740,27 +1756,25 @@ def technicalServiceEditIssue(request):
 
             connection.commit()
             return JsonResponse({
-                'message': 'Se ha editado la falla exitosamente'
+                'message': 'Se ha editado la falla correctamente'
                 }, status=200)
             
         except pyodbc.Error as db_error:
             if connection:
                 connection.rollback()
 
-            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
             if connection:
                 connection.rollback()
             
-            print(str(e))
             return JsonResponse({
                 'error': str(e),
-                'warning': f'Ha ocurrido un error, por favor inténtelo más tarde. Error: {str(e)}'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -1787,7 +1801,7 @@ def technicalServiceOpenCaseWarranty(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
 
             # Mandatory fields
@@ -1797,7 +1811,7 @@ def technicalServiceOpenCaseWarranty(request):
             if not all([register_id, warranty_id]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             # Optional fields
@@ -1849,10 +1863,9 @@ def technicalServiceOpenCaseWarranty(request):
                 connection.commit()
                 return JsonResponse({'message': 'Se ha abierto el caso exitosamente'}, status=200)
             else:
-                print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
-                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
-                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    'error': 'Error: No se ha podido enviar el correo de apertura de caso.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de apertura de caso, por favor inténtelo más tarde.'
                     }, status=400)
             
         except pyodbc.Error as db_error:
@@ -1861,7 +1874,7 @@ def technicalServiceOpenCaseWarranty(request):
 
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -1870,7 +1883,7 @@ def technicalServiceOpenCaseWarranty(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -1882,7 +1895,7 @@ def technicalServiceOpenCaseWarranty(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -1903,7 +1916,7 @@ def technicalServiceUpdateCase(request):
             if not all([case_number, issue_id, issue_resolution_details, status_id, diagnostic_img]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             headers = get_onedrive_headers()
@@ -1917,8 +1930,8 @@ def technicalServiceUpdateCase(request):
             resp = requests.put(upload_url, headers=headers, data=diagnostic_img.read())
             if resp.status_code not in (200, 201):
                 return JsonResponse({
-                    'error': 'Error al subir la factura a OneDrive',
-                    'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
+                    'error': 'Error al subir la imagen a OneDrive',
+                    'warning': 'Ha ocurrido un error al subir su imagen, inténtelo más tarde.',
                     'details': resp.text
                     }, status=500)
 
@@ -1957,7 +1970,7 @@ def technicalServiceUpdateCase(request):
             if cursor.rowcount == 0:
                 return JsonResponse({
                     'error': 'No se encontró el caso para actualizar',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error: No se encontró el caso solicitado.'
                 }, status=404)
 
             data_for_email = {
@@ -1982,10 +1995,9 @@ def technicalServiceUpdateCase(request):
                 connection.commit()
                 return JsonResponse({'message': 'El caso se ha actualizado correctamente'}, status=200)
             else:
-                print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
-                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
-                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    'error': 'Error: No se ha podido enviar el correo de actualización del caso.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de actualización del caso, por favor inténtelo más tarde.'
                     }, status=400)
 
         except pyodbc.Error as db_error:
@@ -1993,7 +2005,7 @@ def technicalServiceUpdateCase(request):
                 connection.rollback()
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -2002,7 +2014,7 @@ def technicalServiceUpdateCase(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
             
         finally:
@@ -2013,7 +2025,7 @@ def technicalServiceUpdateCase(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -2033,10 +2045,9 @@ def technicalServiceCloseCase(request):
             required_change = request.POST['requiredChange']
         
             if not all([case_number, issue_id, issue_resolution_details, diagnostic_img, required_change]):
-                print("Error aqui")
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             headers = get_onedrive_headers()
@@ -2050,8 +2061,8 @@ def technicalServiceCloseCase(request):
             resp = requests.put(upload_url, headers=headers, data=diagnostic_img.read())
             if resp.status_code not in (200, 201):
                 return JsonResponse({
-                    'error': 'Error al subir la factura a OneDrive',
-                    'warning': 'Ha ocurrido un error al subir su factura, inténtelo más tarde.',
+                    'error': 'Error al subir la imagen a OneDrive',
+                    'warning': 'Ha ocurrido un error al subir su imagen, inténtelo más tarde.',
                     'details': resp.text
                     }, status=500)
 
@@ -2089,8 +2100,8 @@ def technicalServiceCloseCase(request):
             
             if cursor.rowcount == 0:
                 return JsonResponse({
-                    'error': 'No se encontró el caso para cerrar',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'error': 'No se encontró el caso para cerrar.',
+                    'warning': 'Error: No se encontró el caso para cerrar.'
                 }, status=404)
 
             data_for_email = {
@@ -2115,30 +2126,27 @@ def technicalServiceCloseCase(request):
                 connection.commit()
                 return JsonResponse({'message': 'El caso se ha cerrado correctamente.'}, status=200)
             else:
-                print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
-                    'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
-                    'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
+                    'error': 'Error: No se ha podido enviar el correo de cierre del caso.',
+                    'warning': 'Ha ocurrido un error al enviar el correo de cierre del caso, por favor inténtelo más tarde.'
                     }, status=400)
 
         except pyodbc.Error as db_error:
-            print(db_error)
             if connection:
                 connection.rollback()
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
-            print(str(e))
             if connection:
                 connection.rollback()
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
             
         finally:
@@ -2149,7 +2157,7 @@ def technicalServiceCloseCase(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 # User Views
@@ -2171,7 +2179,7 @@ def userLogin(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             email_address = data.get('EmailAddress')
@@ -2180,7 +2188,7 @@ def userLogin(request):
             if not all([email_address, password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             # Establish database connection
@@ -2228,7 +2236,10 @@ def userLogin(request):
             # You would generate and return a session token or JWT here
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
             if not jwt_secret:
-                return JsonResponse({'error': 'Server misconfiguration: missing JWT secret key'}, status=404)
+                return JsonResponse({
+                    'error': 'Server misconfiguration: missing JWT secret key',
+                    'warning': 'Error al generar el token de sesión'
+                    }, status=404)
             
             payload = {
                 'user_id': user_id,
@@ -2249,19 +2260,18 @@ def userLogin(request):
             if connection:
                 connection.rollback()
 
-            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
             if connection:
                 connection.rollback()
-            print(str(e))
+
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
         
         finally:
@@ -2272,7 +2282,7 @@ def userLogin(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -2287,7 +2297,7 @@ def publicRegister(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             # Mandatory fields
@@ -2302,13 +2312,12 @@ def publicRegister(request):
             if not all([first_name, last_name, national_id, email_address, password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
             
             # Optional fields
             address = data.get('Address')
             zip_code = data.get('Zip')
-            
 
             # Establish database connection
             connection = pyodbc.connect(
@@ -2324,15 +2333,15 @@ def publicRegister(request):
             cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
             if cursor.fetchone()[0] > 0:
                 return JsonResponse({
-                    'error': 'Ya existe un usuario asociado a este correo electrónico',
-                    'warning': 'Ya existe un usuario asociado a este correo electrónico'
+                    'error': 'Ya existe un usuario asociado a este correo electrónico.',
+                    'warning': 'Ya existe un usuario asociado a este correo electrónico.'
                     }, status=400)
 
             cursor.execute("SELECT COUNT(*) FROM Warranty.Customer WHERE NationalId = ?", (national_id,))
             if cursor.fetchone()[0] > 0:
                 return JsonResponse({
-                    'error': 'Ya existe un usuario asociado a esta cédula de identidad',
-                    'warning': 'Ya existe un usuario asociado a esta cédula de identidad'
+                    'error': 'Ya existe un usuario asociado a este documento de identificación.',
+                    'warning': 'Ya existe un usuario asociado a este documento de identificación.'
                 }, status=400)
 
             # Begin a transaction for atomic insertion
@@ -2371,7 +2380,6 @@ def publicRegister(request):
                 connection.commit()
                 return JsonResponse({'message': 'Usuario registrado exitosamente.'}, status=201)
             else:
-                print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
                     'error': 'Error: No se ha podido enviar el correo de registro de usuario',
                     'warning': 'Ha ocurrido un error al enviar el correo de registro de usuario, por favor inténtelo más tarde.'
@@ -2381,20 +2389,18 @@ def publicRegister(request):
             if connection:
                 connection.rollback()
             
-            print(db_error)
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
             
         except Exception as e:
             if connection:
                 connection.rollback()
             
-            print(str(e))
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
             
         finally:
@@ -2405,7 +2411,7 @@ def publicRegister(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -2445,7 +2451,7 @@ def warrantyRegister(request):
             ]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             connection = pyodbc.connect(
@@ -2467,9 +2473,8 @@ def warrantyRegister(request):
             inventory_quantity = cursor.fetchval()
 
             if inventory_quantity == None or inventory_quantity < 1:
-                print("No hay garantías disponibles en el inventario.")
                 return JsonResponse({
-                    'error': 'Error: No hay garantías disponibles en el inventario.',
+                    'error': 'Error: No hay garantías disponibles en el inventario para este producto.',
                     'warning': 'No existen garantías disponibles en el inventario para este producto.',
                     }, status=400)
             else:
@@ -2559,7 +2564,6 @@ def warrantyRegister(request):
                     connection.commit()
                     return JsonResponse({'message': 'Garantía registrada de forma exitosa.'}, status=201)
                 else:
-                    print('Ha ocurrido un error al enviar el correo')
                     return JsonResponse({
                         'error': 'Error: No se ha podido enviar el correo de registro de garrantía.',
                         'warning': 'Ha ocurrido un error al enviar el correo de registro de garantía, por favor inténtelo más tarde.'
@@ -2571,17 +2575,16 @@ def warrantyRegister(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
             if connection:
                 connection.rollback()
             
-            print("Error: " + str(e))
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -2592,7 +2595,7 @@ def warrantyRegister(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -2606,7 +2609,7 @@ def warrantyHistory(request):
         if not user_id:
             return JsonResponse({
                 'error': 'Error: Parámetro user_id inválido.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
         try:
             connection = pyodbc.connect(
@@ -2635,8 +2638,8 @@ def warrantyHistory(request):
                 return JsonResponse(warranties_list, safe=False)
             else:
                 return JsonResponse({
-                    'error': 'Error: No se encontraron garantías',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'error': 'Error: No se encontraron garantías registradas.',
+                    'warning': 'Error: No se encontraron garantías registradas.'
                 }, status=404)
 
         except pyodbc.Error as db_error:
@@ -2645,7 +2648,7 @@ def warrantyHistory(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
@@ -2654,7 +2657,7 @@ def warrantyHistory(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -2665,7 +2668,7 @@ def warrantyHistory(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
     
 @csrf_exempt
@@ -2681,7 +2684,7 @@ def userProfileEdit(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             # Mandatory fields check
@@ -2695,7 +2698,7 @@ def userProfileEdit(request):
             if not all([user_id, first_name, last_name, national_id, email_address, phone_number]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
             
             # Optional fields
@@ -2721,8 +2724,8 @@ def userProfileEdit(request):
 
             if not user_info:
                 return JsonResponse({
-                    'error': 'Usuario no encontrado',
-                    'warning': 'Ha ocurrido un error, por favor inténelo más tarde.'}, status=404)
+                    'error': 'Usuario no encontrado.',
+                    'warning': 'Usuario no encontrado.'}, status=404)
             
             customer_id = user_info[0]
             current_email = user_info[1]
@@ -2731,8 +2734,8 @@ def userProfileEdit(request):
                 cursor.execute("SELECT COUNT(*) FROM Warranty.Users WHERE Users = ?", (email_address,))
                 if cursor.fetchone()[0] > 0:
                     return JsonResponse({
-                    'error': 'Ya existe un usuario asociado a este correo electrónico',
-                    'warning': 'Ya existe un usuario asociado a este correo electrónico'}
+                    'error': 'Ya existe un usuario asociado a este correo electrónico.',
+                    'warning': 'Ya existe un usuario asociado a este correo electrónico.'}
                     , status=400)
             
             # Update the Customer table
@@ -2761,7 +2764,7 @@ def userProfileEdit(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
@@ -2770,7 +2773,7 @@ def userProfileEdit(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
             
         finally:
@@ -2781,7 +2784,7 @@ def userProfileEdit(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -2797,7 +2800,7 @@ def userChangePassword(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
 
             # Mandatory fields check
@@ -2808,7 +2811,7 @@ def userChangePassword(request):
             if not all([user_id, current_password, new_password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             connection = pyodbc.connect(
@@ -2826,7 +2829,7 @@ def userChangePassword(request):
             if current_password != actual_password:
                 return JsonResponse({
                     'error': 'Error: Contraseña actual incorrecta.',
-                    'warning': 'Contraseña incorrecta, inténtelo nuevamente.'}, status=400)
+                    'warning': 'Contraseña actual incorrecta, inténtelo nuevamente.'}, status=400)
 
             sql = """
                 UPDATE Warranty.Users
@@ -2844,7 +2847,7 @@ def userChangePassword(request):
             
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
 
         except Exception as e:
@@ -2853,7 +2856,7 @@ def userChangePassword(request):
             
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
                 
         finally:
@@ -2864,7 +2867,7 @@ def userChangePassword(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -2879,7 +2882,7 @@ def forgottenPassword(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             email_address = data.get('email')
@@ -2887,7 +2890,7 @@ def forgottenPassword(request):
             if not email_address:
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un erro con los campos requeridos.'
                 }, status=400)
 
             connection = pyodbc.connect(
@@ -2907,8 +2910,8 @@ def forgottenPassword(request):
             cursor.execute(sql, (email_address,))
             if cursor.fetchone()[0] <= 0:
                 return JsonResponse({
-                'error': 'No existe un usuario asociado a este correo electrónico',
-                'warning': 'No existe un usuario asociado a este correo electrónico'
+                'error': 'No existe un usuario asociado a este correo electrónico.',
+                'warning': 'No existe un usuario asociado a este correo electrónico.'
                 }, status=404)
 
             sql_name = """
@@ -2922,25 +2925,24 @@ def forgottenPassword(request):
             user_id, first_name, user_role = cursor.fetchone()
 
             if not first_name:
-                print("Error al obtener el nombre del usuario.")
                 return JsonResponse({
-                    'error': 'Error al obtener el nombre del usuario'
+                    'error': 'Error al obtener el nombre del usuario.',
+                    'warning': 'Error al obtener el nombre del usuario.'
                 }, status=400)
 
             
             temp_password = generate_temp_password()
             if not temp_password:
-                print("Error al generar la contraseña temporal")
                 return JsonResponse({
-                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'error': 'Error: No se ha podido generar el código de verificación.',
+                'warning': 'Error: No se ha podido generar el código de verificación.'
                 }, status=400)
 
             jwt_secret = os.environ.get("JWT_SECRET_KEY")
             if not jwt_secret:
-                print('Error: Server misconfiguration: Missing JWT secret key')
                 return JsonResponse({
-                    'error': 'Server misconfiguration: missing JWT secret key'
+                    'error': 'Server misconfiguration: missing JWT secret key',
+                    'warning': 'Error al generar el token de sesión.'
                 }, status=404)
 
             payload = {
@@ -2968,17 +2970,24 @@ def forgottenPassword(request):
                     'temp_token': temp_token
                 }, status=200)
             else:
-                print('Ha ocurrido un error al enviar el correo')
                 return JsonResponse({
                     'error': 'Error: No se ha podido enviar el correo con el código de recuperación.',
                     'warning': 'Ha ocurrido un error al enviar el correo con el código de recuperación, por favor inténtelo más tarde.'
                     }, status=400)
-                       
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
+                }, status=500)
+            
         except Exception as e:
-            print("Error: " + str(e))
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
 
         finally:
@@ -2990,7 +2999,7 @@ def forgottenPassword(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
 @csrf_exempt
@@ -3005,7 +3014,7 @@ def resetPassword(request):
             except JSONDecodeError:
                 return JsonResponse({
                     'error': 'JSON Inválido',
-                    'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                    'warning': 'Error al enviar los datos al servidor.'
                     }, status=400)
             
             user_id = data.get('user_id')
@@ -3014,7 +3023,7 @@ def resetPassword(request):
             if not all([user_id, new_password]):
                 return JsonResponse({
                 'error': 'Error: Ha ocurrido un error con los campos requeridos.',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
                 }, status=400)
 
             # Establish database connection
@@ -3040,20 +3049,18 @@ def resetPassword(request):
             if connection:
                 connection.rollback()
             
-            print(f"Error: {db_error}")
             return JsonResponse({
                 'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
                 }, status=500)
         
         except Exception as e:
             if connection:
                 connection.rollback()
             
-            print("Error: " + str(e))
             return JsonResponse({
                 'error': str(e),
-                'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+                'warning': f'Ha ocurrido un error: {str(e)}'
                 }, status=500)
      
         finally:
@@ -3064,5 +3071,5 @@ def resetPassword(request):
     else:
         return JsonResponse({
             'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, inténtelo más tarde.'
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
