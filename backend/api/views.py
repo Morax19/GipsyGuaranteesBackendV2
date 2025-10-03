@@ -1093,12 +1093,12 @@ def adminCreateBranch(request):
             cursor = connection.cursor()
 
             # Check if branch already exists
-            cursor.execute("SELECT COUNT(*) FROM Warranty.Branch WHERE Branch.RIF = ?", (RIF,))
-            if cursor.fetchone()[0] > 0:
-                return JsonResponse({
-                    'error': 'Error: Esta sucursal ya existe.',
-                    'warning': 'Error: Esta sucursal ya existe.'
-                    }, status=400)
+            #cursor.execute("SELECT COUNT(*) FROM Warranty.Branch WHERE Branch.RIF = ?", (RIF,))
+            #if cursor.fetchone()[0] > 0:
+            #    return JsonResponse({
+            #        'error': 'Error: Esta sucursal ya existe.',
+            #        'warning': 'Error: Esta sucursal ya existe.'
+            #        }, status=400)
 
             sql = """
                 INSERT INTO Warranty.Branch (customerID, isRetail, RIFtype, RIF, companyName, address, branchDescription)
