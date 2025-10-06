@@ -2438,7 +2438,6 @@ def warrantyRegister(request):
 
             if not all([
                 register_id,
-                branch_id,
                 item_id,
                 is_retail,
                 purchase_date,
