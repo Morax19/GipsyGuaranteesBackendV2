@@ -9,7 +9,8 @@ SECRET_KEY = os.environ.get('MY_SECRET_KEY')
 
 ALLOWED_HOSTS = [
     os.environ.get('WEBSITE_HOSTNAME'),
-    os.environ.get('CUSTOM_HOST_NAME')
+    os.environ.get('CUSTOM_HOST_NAME'),
+    os.environ.get('NEW_WEBSITE_HOME')
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -19,6 +20,7 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     # URL del frontend REACT
     os.environ.get('VITE_FRONT_API_URL'),
+    #os.environ.get('VITE_FRONT_API_NEW_URL')
 ]
 
 # Conexión a la BD Azure
