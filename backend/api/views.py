@@ -2426,7 +2426,7 @@ def warrantyRegister(request):
             register_id = request.POST['registerID']
             branch_id = request.POST['branchID']
 
-if branch_id == '': branch_id = NULL
+            if branch_id == '': branch_id = None
 
             item_id = request.POST['ItemId']
             is_retail = request.POST['isRetail']
