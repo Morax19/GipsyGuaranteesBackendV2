@@ -1223,7 +1223,7 @@ def create_closed_case_html(data):
                     </tr>
                     <tr>
                         <th>El producto requiere cambio</th>
-                        <td>{'Sí' if data['required_change'] else 'No'}</td>
+                        <td>{'Sí' if data['required_change'] == 'true' else 'No'}</td>
                     </tr>
                 </table>
                 <p>Si tiene alguna pregunta, no dude en contactar a nuestro equipo de soporte técnico.</p>
@@ -1357,7 +1357,7 @@ def create_closed_case_company_html(data):
                     </tr>
                     <tr>
                         <th>El producto requiere cambio</th>
-                        <td>{'Sí' if data['required_change'] else 'No'}</td>
+                        <td>{'Sí' if data['required_change'] == 'true' else 'No'}</td>
                     </tr>
                 </table>
             </div>
