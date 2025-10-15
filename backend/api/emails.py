@@ -74,15 +74,15 @@ def create_registration_html(user_name):
     <body>
         <div class="container">
             <div class="header">
-                <h2>¡Bienvenido a Gipsy Garantías!</h2>
+                <h2>Bienvenido al Servicio de Garantías</h2>
             </div>
             <div class="body-content">
                 <p><strong>Hola, {user_name}.</strong></p>
                 <p>Su registro se ha completado exitosamente. Ahora tiene acceso a todas las funcionalidades de nuestra plataforma.</p>
-                <p>Con Gipsy Garantías, puede registrar de manera eficiente las garantías de los productos que ha comprado, visualizar su historial de garantías y consultar la información sobre el Servicio Técnico disponible en caso de requerirlo.</p>
+                <p>Con el Servicio de Garantías, puede registrar de manera eficiente las garantías de los productos que ha comprado, visualizar su historial de garantías y consultar la información sobre el Servicio Técnico disponible en caso de requerirlo.</p>
             </div>
             <div style="text-align: center;">
-                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net" class="button"><strong>Ir a la aplicación</strong></a>
+                 <a href="https://www.garantiasservicio.com/" class="button"><strong>Ir a la aplicación</strong></a>
             </div>
             <div class="footer">
                 <p>Este es un correo automático, por favor no responda a este mensaje.</p>
@@ -170,7 +170,7 @@ def create_registration_company_html(data):
                 <h2>Nuevo Registro de Usuario</h2>
             </div>
             <div class="body-content">
-                <p>Se ha registrado un nuevo usuario en la plataforma Gipsy Garantías.</p>
+                <p>Se ha registrado un nuevo usuario en la plataforma Servicio de Garantías.</p>
                 <p><strong>Detalles del usuario:</strong></p>
                 <ul>
                     <li><strong>Nombre de Usuario:</strong> {data["user_name"]}</li>
@@ -194,7 +194,7 @@ def send_user_register_email(data):
         email_content_user = create_registration_html(data['first_name'])
 
         msg = EmailMessage(
-            "Gipsy Garantías - Nuevo Registro de Usuario",
+            "Servicio de Garantías - Nuevo Registro de Usuario",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']]
@@ -206,7 +206,7 @@ def send_user_register_email(data):
         email_content_intern = create_registration_company_html(data)
 
         msg_intern = EmailMessage(
-            "Gipsy Garantías - Nuevo Registro de Usuario",
+            "Servicio de Garantías - Nuevo Registro de Usuario",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             [os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
@@ -518,7 +518,7 @@ def send_warranty_register_email(data):
         email_content_user = create_warranty_registration_html(data)
 
         msg = EmailMessage(
-            f"Gipsy Garantías - Nuevo Registro de Garantía #{data['warranty_id']}",
+            f"Servicio de Garantías - Nuevo Registro de Garantía #{data['warranty_id']}",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']]
@@ -530,7 +530,7 @@ def send_warranty_register_email(data):
         email_content_intern = create_warranty_registration_company_html(data)
 
         msg_intern = EmailMessage(
-            f"Gipsy Garantías - Nuevo Registro de Garantía #{data['warranty_id']}",
+            f"Servicio de Garantías - Nuevo Registro de Garantía #{data['warranty_id']}",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             [os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
@@ -789,7 +789,7 @@ def send_warranty_open_case_email(data):
         email_content_user = create_open_case_html(data)
 
         msg = EmailMessage(
-            f"Gipsy Garantías - Apertura de Caso Servicio Técnico #{data['case_number']}",
+            f"Servicio de Garantías - Apertura de Caso Servicio Técnico #{data['case_number']}",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']['customer']]
@@ -801,7 +801,7 @@ def send_warranty_open_case_email(data):
         email_content_intern = create_open_case_company_html(data)
 
         msg_intern = EmailMessage(
-            f"Gipsy Garantías - Apertura de Caso Servicio Técnico #{data['case_number']}",
+            f"Servicio de Garantías - Apertura de Caso Servicio Técnico #{data['case_number']}",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             [
@@ -1079,7 +1079,7 @@ def send_warranty_update_case_email(data):
         email_content_user = create_update_case_html(data)
 
         msg = EmailMessage(
-            f"Gipsy Garantías - Actualización de Caso Servicio Técnico #{data['case_number']}",
+            f"Servicio de Garantías - Actualización de Caso Servicio Técnico #{data['case_number']}",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']['customer']]
@@ -1091,7 +1091,7 @@ def send_warranty_update_case_email(data):
         email_content_intern = create_update_case_company_html(data)
 
         msg_intern = EmailMessage(
-            f"Gipsy Garantías - Actualización de Caso Servicio Técnico #{data['case_number']}",
+            f"Servicio de Garantías - Actualización de Caso Servicio Técnico #{data['case_number']}",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             [
@@ -1367,7 +1367,7 @@ def send_warranty_close_case_email(data):
         email_content_user = create_closed_case_html(data)
 
         msg = EmailMessage(
-            f"Gipsy Garantías - Cierre de Caso Servicio Técnico #{data['case_number']}",
+            f"Servicio de Garantías - Cierre de Caso Servicio Técnico #{data['case_number']}",
             email_content_user,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']['customer']]
@@ -1379,7 +1379,7 @@ def send_warranty_close_case_email(data):
         email_content_intern = create_closed_case_company_html(data)
 
         msg_intern = EmailMessage(
-            f"Gipsy Garantías - Cierre de Caso Servicio Técnico #{data['case_number']}",
+            f"Servicio de Garantías - Cierre de Caso Servicio Técnico #{data['case_number']}",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
             [
@@ -1509,7 +1509,7 @@ def send_temp_password_email(data):
         email_content = create_password_reset_html(data)
 
         msg = EmailMessage(
-            'Gipsy Garantías - Recuperación de contraseña',
+            'Servicio de Garantías - Recuperación de contraseña',
             email_content,
             os.environ.get('EMAIL_HOST_USER'),
             [data['email_address']]
