@@ -1377,7 +1377,8 @@ def technicalServiceGetWarrantyByID(request):
                 JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
                 LEFT JOIN Warranty.technicalService TS ON W.WarrantyNumber = TS.warrantyID
                 LEFT JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
-				JOIN Warranty.Customer C ON W.registerID = C.ID
+				JOIN Warranty.Users U ON W.registerID = U.userID
+				JOIN Warranty.Customer C ON U.CustomerID = C.ID
                 LEFT JOIN Warranty.Branch B ON W.branchID = B.branchID
                 WHERE W.WarrantyNumber = ?
             """
