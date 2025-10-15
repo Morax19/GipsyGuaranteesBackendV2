@@ -1483,12 +1483,13 @@ def technicalServiceHistory(request):
                         C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription,
                         W.branchID, I.BinLocation, I.SubDescription3 AS Brand, C.NationalId, C.PhoneNumber, C.EmailAddress
                 FROM Warranty.technicalService TS
-                JOIN Warranty.Users U ON TS.registerID = U.userID
-                JOIN Warranty.Customer C ON U.CustomerID = C.ID
                 JOIN Warranty.warranty W ON TS.warrantyID = W.WarrantyNumber
-                JOIN Warranty.Branch B ON W.branchID = B.branchID
+				JOIN Warranty.Users U ON W.registerID = U.userID
+                JOIN Warranty.Customer C ON U.CustomerID = C.ID
+                LEFT JOIN Warranty.Branch B ON W.branchID = B.branchID
                 JOIN Main.Item I ON W.ItemId = I.ID AND W.isRetail = I.isRetail
                 JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
+				ORDER BY TS.warrantyID
             """
             cursor.execute(sql)
             ts_cases = cursor.fetchall()
