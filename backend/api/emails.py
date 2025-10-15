@@ -1221,6 +1221,10 @@ def create_closed_case_html(data):
                         <th>Descripción de la Acción Realizada</th>
                         <td>{data['issue_resolution_details']}</td>
                     </tr>
+                    <tr>
+                        <th>El producto requiere cambio</th>
+                        <td>{'Sí' if data['required_change'] else 'No'}</td>
+                    </tr>
                 </table>
                 <p>Si tiene alguna pregunta, no dude en contactar a nuestro equipo de soporte técnico.</p>
             </div>
@@ -1350,6 +1354,10 @@ def create_closed_case_company_html(data):
                     <tr>
                         <th>Descripción de la Acción Realizada</th>
                         <td>{data['issue_resolution_details']}</td>
+                    </tr>
+                    <tr>
+                        <th>El producto requiere cambio</th>
+                        <td>{'Sí' if data['required_change'] else 'No'}</td>
                     </tr>
                 </table>
             </div>

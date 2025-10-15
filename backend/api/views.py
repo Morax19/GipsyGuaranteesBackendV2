@@ -2121,7 +2121,8 @@ def technicalServiceCloseCase(request):
                 'reception_date': request.POST['ReceptionDate'],
                 'case_status': request.POST['statusDescription'],
                 'issue_description': request.POST['issueDescription'],
-                'issue_resolution_details': issue_resolution_details
+                'issue_resolution_details': issue_resolution_details,
+                'required_change': required_change
             }
 
             email = send_warranty_close_case_email(data_for_email)
