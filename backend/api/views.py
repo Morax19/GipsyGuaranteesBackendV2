@@ -1378,7 +1378,7 @@ def technicalServiceGetWarrantyByID(request):
                 LEFT JOIN Warranty.technicalService TS ON W.WarrantyNumber = TS.warrantyID
                 LEFT JOIN Warranty.technicalServiceStatus TSS ON TS.statusID = TSS.statusID
 				JOIN Warranty.Customer C ON W.registerID = C.ID
-                JOIN Warranty.Branch B ON W.branchID = B.branchID
+                LEFT JOIN Warranty.Branch B ON W.branchID = B.branchID
                 WHERE W.WarrantyNumber = ?
             """
             cursor.execute(sql, (warranty_number, ))

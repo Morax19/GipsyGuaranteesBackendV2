@@ -1493,7 +1493,7 @@ def create_password_reset_html(data):
                 </p>
             </div>
             <div style="text-align: center;">
-                 <a href="https://icy-tree-06332be0f.1.azurestaticapps.net/set-new-password" class="button"><strong>Reestablecer mi contraseña</strong></a>
+                 <a href="https://www.garantiasservicio.com/set-new-password" class="button"><strong>Reestablecer mi contraseña</strong></a>
             </div>
             <div class="footer">
                 <p>Este es un correo automático, no responda a este mensaje.</p>
