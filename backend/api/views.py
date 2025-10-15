@@ -2629,10 +2629,10 @@ def warrantyHistory(request):
             sql = """
                 SELECT W.WarrantyNumber, W.purchaseDate, W.registrationDate, W.usedCount, B.companyName, I.Description AS ProductName, S.description AS WarrantyStatus, I.SubDescription3 AS itemBrand
                 FROM Warranty.warranty W
-                JOIN Warranty.Branch B ON W.branchID = B.branchID
+                LEFT JOIN Warranty.Branch B ON W.branchID = B.branchID
                 JOIN Main.Item I ON W.ItemId = I.ID AND I.isRetail = W.isRetail
                 JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
-				WHERE W.registerID = ?  
+				WHERE W.registerID = ?
             """
             cursor.execute(sql, (user_id,))
             warranties = cursor.fetchall()
