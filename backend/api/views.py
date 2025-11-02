@@ -1499,8 +1499,8 @@ def technicalServiceHistory(request):
                 return JsonResponse(ts_list, safe=False)
             else:
                 return JsonResponse({
-                    'error': 'Error: No se encontraron resultados',
-                    'warning': 'Error: No se han encontrado resultados'
+                    'error': 'Error: No se encontraron resultados.',
+                    'warning': 'Error: No se han encontrado resultados. (test1)'
                     }, status=400)
 
         except pyodbc.Error as db_error:
@@ -1558,7 +1558,7 @@ def technicalServiceGetStatus(request):
                 return JsonResponse(status_list, safe=False)
             else:
                 return JsonResponse({
-                    'error': 'Error: No se encontraron resultados',
+                    'error': 'Error: No se encontraron resultados.',
                     'warning': 'Error: No se han encontrado resultados.'
                     }, status=400)
         
