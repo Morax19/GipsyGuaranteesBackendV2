@@ -1501,7 +1501,7 @@ def technicalServiceHistory(request):
                 return JsonResponse({
                     'error': 'Error: No se encontraron resultados.',
                     'warning': 'Error: No se han encontrado resultados. (test1)'
-                    }, status=400)
+                    }, status=404)
 
         except pyodbc.Error as db_error:
             if connection:
@@ -1560,7 +1560,7 @@ def technicalServiceGetStatus(request):
                 return JsonResponse({
                     'error': 'Error: No se encontraron resultados.',
                     'warning': 'Error: No se han encontrado resultados.'
-                    }, status=400)
+                    }, status=404)
         
         except pyodbc.Error as db_error:
             if connection:
