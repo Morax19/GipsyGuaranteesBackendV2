@@ -20,7 +20,6 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     # URL del frontend REACT
     os.environ.get('VITE_FRONT_API_URL'),
-    #os.environ.get('VITE_FRONT_API_NEW_URL')
 ]
 
 # Conexión a la BD Azure

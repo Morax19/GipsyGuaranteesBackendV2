@@ -256,6 +256,7 @@ def getBranchByCustomerID(request):
                 cursor.close()
             if connection:
                 connection.close()
+
     else:
         return JsonResponse({
             'error': 'Invalid request method',
@@ -577,6 +578,7 @@ def adminGetMainCustomers(request):
             if customers:
                 customer_list = [dict(zip([column[0] for column in cursor.description], row)) for row in customers]
                 return JsonResponse(customer_list, safe=False)
+            
             else:
                 return JsonResponse({
                     'error': 'Error: No se han encontrado las compañías.',
@@ -2413,6 +2415,79 @@ def publicRegister(request):
                 cursor.close()
             if connection:
                 connection.close()     
+    else:
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
+            }, status=405)
+
+@csrf_exempt
+@jwt_required
+def getMainCustomersWarrantyRegister(request):
+    if request.method == 'GET':
+        item_id = request.GET.get('itemID')
+
+        if not item_id:
+            return JsonResponse({
+                'error': 'Error: Ha ocurrido un error con los campos requeridos.',
+                'warning': 'Error: Ha ocurrido un error con los campos requeridos.'
+            }, status=400)
+
+        connection = None
+        cursor = None
+
+        try:
+            connection = pyodbc.connect(
+                f'Driver={{ODBC Driver 18 for SQL Server}};'
+                f'Server={os.environ["DB_SERVER"]};'
+                f'Database={os.environ["DB_NAME"]};'
+                f'UID={os.environ["DB_USER"]};'
+                f'PWD={os.environ["DB_PASSWORD"]};')
+            cursor = connection.cursor()
+
+            sql = """
+                SELECT I.customerID AS ID, C.FirstName + '' + C.LastName AS FullName, C.isRetail, I.itemID
+                FROM Main.Customer C
+                JOIN Warranty.Inventory I ON C.ID = I.customerID AND C.isRetail = I.isRetail
+                WHERE C.FirstName + '' + C.LastName != ' '
+                AND itemID = ?
+                ORDER BY FullName
+            """
+
+            cursor.execute(sql, (item_id,))
+
+            stores = cursor.fetchall()
+            if stores:
+                storesList = [dict(zip([column[0] for column in cursor.description], row)) for row in stores]
+                return JsonResponse(storesList, safe=False)
+
+            else:
+                return JsonResponse({
+                    'error': 'Error: Clientes no encontrados',
+                    'warning': 'Error: Clientes no encontrados'
+                    }, status=404)
+
+        except pyodbc.Error as db_error:
+            if connection:
+                connection.rollback()
+            
+            return JsonResponse({
+                'error': f'A database error ocurred: {db_error}',
+                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
+                }, status=500)
+
+        except Exception as e:
+            return JsonResponse({
+                'error': str(e),
+                'warning': f'Ha ocurrido un error: {str(e)}'
+                }, status=500)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+        
     else:
         return JsonResponse({
             'error': 'Invalid request method',

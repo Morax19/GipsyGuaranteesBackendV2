@@ -8,6 +8,7 @@ from .views import (
     warrantyHistory,
     userProfileEdit,
     userChangePassword,
+    getMainCustomersWarrantyRegister,
     technicalServiceLogin,
     adminLogin,
     adminCreateUsers,
@@ -48,6 +49,7 @@ urlpatterns = [
     path('warrantyHistory/', warrantyHistory, name='warranty_history'),
     path('userProfileEdit/', userProfileEdit, name='user_profile_edit'),
     path('userChangePassword/', userChangePassword, name='user_change_password'),
+    path('getMainCustomersWarrantyRegister/', getMainCustomersWarrantyRegister, name='get_main_customers_warranty_register'),
 
     # Technical Services paths and endpoints
     #   Login
