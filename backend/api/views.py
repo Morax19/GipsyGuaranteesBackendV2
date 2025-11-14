@@ -712,7 +712,7 @@ def adminLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description, U.userID, C.FirstName
+                SELECT U.Password, R.Description, U.userID, C.FirstName, C.EmailAddress
                 FROM Warranty.Users U
                 JOIN Warranty.Role R ON U.roleID = R.RoleID
                 JOIN Warranty.Customer C ON U.CustomerID = C.ID
@@ -732,6 +732,7 @@ def adminLogin(request):
             user_role = user_data[1]
             user_id = user_data[2]
             user_fname = user_data[3]
+            user_email = user_data[4]
 
             # Verify the password
             if not password == stored_password:
@@ -750,7 +751,7 @@ def adminLogin(request):
             payload = {
                 'user_id': user_id,
                 'user_first_name': user_fname,
-                'email_address': email_address,
+                'email_address': user_email,
                 'role': user_role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
             }
@@ -1265,7 +1266,7 @@ def technicalServiceLogin(request):
 
             # Retrieve user information and hashed password in a single query
             sql = """
-                SELECT U.Password, R.Description, U.userID, C.FirstName
+                SELECT U.Password, R.Description, U.userID, C.FirstName, C.EmailAddress
                 FROM Warranty.Users U
                 JOIN Warranty.Role R ON U.roleID = R.RoleID
                 JOIN Warranty.Customer C ON U.CustomerID = C.ID
@@ -1285,6 +1286,7 @@ def technicalServiceLogin(request):
             user_role = user_data[1]
             user_id = user_data[2]
             user_fname = user_data[3]
+            user_email = user_data[4]
 
             # Verify the password
             if not password == stored_password:
@@ -1308,7 +1310,7 @@ def technicalServiceLogin(request):
             payload = {
                 'user_id': user_id,
                 'user_first_name': user_fname,
-                'email_address': email_address,
+                'email_address': user_email,
                 'role': user_role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
             }
@@ -2603,11 +2605,11 @@ def warrantyRegister(request):
                         }, status=400)
 
                 sql = """
-                    INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber)
+                    INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber, CustomerID)
                     OUTPUT INSERTED.WarrantyNumber
                     VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
                 """
-                cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, public_invoice_url, used_count, invoice_number))
+                cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, public_invoice_url, used_count, invoice_number, main_customer))
                 warranty_number = cursor.fetchval()
 
                 # Reduce the quantity of available warranties in the inventory
