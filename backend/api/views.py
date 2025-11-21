@@ -2607,7 +2607,7 @@ def warrantyRegister(request):
                 sql = """
                     INSERT INTO Warranty.warranty (registerID, branchID, ItemId, isRetail, purchaseDate, registrationDate, statusID, productBrand, productBarcode, invoiceCopyPath, usedCount, invoiceNumber, CustomerID)
                     OUTPUT INSERTED.WarrantyNumber
-                    VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?)
                 """
                 cursor.execute(sql, (register_id, branch_id, item_id, is_retail, purchase_date, status_id, product_brand, product_barcode, public_invoice_url, used_count, invoice_number, main_customer))
                 warranty_number = cursor.fetchval()
