@@ -1225,13 +1225,6 @@ def adminEditBranch(request):
 
 # Technical Service Views
 #   1. Login
-#   2. Get Warranty By ID
-#   3. Technical Service History
-#   4. Technical Service Get Status
-#   5. Technical Service Get Issue
-#   6. Technical Service Open Case
-#   7. Technical Service Update Case
-#   8. Technical Service Close Case
 @csrf_exempt
 def technicalServiceLogin(request):
     if request.method == 'POST':
@@ -1353,6 +1346,7 @@ def technicalServiceLogin(request):
             'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   2. Get Warranty By ID
 @jwt_required
 def technicalServiceGetWarrantyByID(request):
     if request.method == 'GET':
@@ -1438,6 +1432,7 @@ def technicalServiceGetWarrantyByID(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   3. Technical Service History
 def technicalServiceHistory(request):
     if request.method == 'GET':
         connection = None
@@ -1515,6 +1510,7 @@ def technicalServiceHistory(request):
             'warning': 'Ha ocurrido un error, inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   4. Technical Service Get Status
 def technicalServiceGetStatus(request):
     if request.method == 'GET':
         connection = None
@@ -1574,6 +1570,7 @@ def technicalServiceGetStatus(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   5. Technical Service Get Issue
 def technicalServiceGetIssue(request):
     if request.method == 'GET':
         connection = None
@@ -1774,7 +1771,8 @@ def technicalServiceEditIssue(request):
             'error': 'Invalid request method',
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
-
+    
+#   6. Technical Service Open Case
 @csrf_exempt
 @jwt_required
 def technicalServiceOpenCaseWarranty(request):
@@ -1885,6 +1883,7 @@ def technicalServiceOpenCaseWarranty(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   7. Technical Service Update Case
 @csrf_exempt
 @jwt_required
 def technicalServiceUpdateCase(request):
@@ -1949,10 +1948,10 @@ def technicalServiceUpdateCase(request):
 
             sql = """
                 UPDATE Warranty.technicalService
-                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), diagnosticCopyPath = ?
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), diagnosticCopyPath = ?, diagnosticFileName = ?
                 WHERE CaseNumber = ?
             """
-            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), int(status_id), public_diagnostic_url, int(case_number)))
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), int(status_id), public_diagnostic_url, unique_name, int(case_number)))
             
             if cursor.rowcount == 0:
                 return JsonResponse({
@@ -2015,6 +2014,7 @@ def technicalServiceUpdateCase(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   8. Technical Service Close Case
 @csrf_exempt
 @jwt_required
 def technicalServiceCloseCase(request):
@@ -2080,10 +2080,10 @@ def technicalServiceCloseCase(request):
 
             sql = """
                 UPDATE Warranty.technicalService
-                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE(), requiredChange = ?, diagnosticCopyPath = ?
+                SET issueID = ?, issueResolutionDetails = ?, statusID = ?, lastUpdated = GETDATE(), closedDate = GETDATE(), requiredChange = ?, diagnosticCopyPath = ?, diagnosticFileName = ?
                 WHERE CaseNumber = ?
             """
-            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, required_change, public_diagnostic_url, case_number))
+            cursor.execute(sql, (int(issue_id), str(issue_resolution_details), status_id, required_change, public_diagnostic_url, unique_name, case_number))
             
             if cursor.rowcount == 0:
                 return JsonResponse({
