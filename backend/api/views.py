@@ -2008,6 +2008,7 @@ def technicalServiceUpdateCase(request):
                 cursor.close()
             if connection:
                 connection.close()
+                
     else:
         return JsonResponse({
             'error': 'Invalid request method',
