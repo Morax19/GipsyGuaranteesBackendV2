@@ -14,6 +14,7 @@ from .emails import (
     send_temp_password_email,
 )
 
+from urllib.parse import quote
 from django.http import JsonResponse
 from json.decoder import JSONDecodeError
 from .onedrive import get_onedrive_headers
@@ -22,10 +23,6 @@ from .utils import jwt_required, generate_temp_password
     
 # General use Views
 #   Get Roles
-#   Get Users
-#   Get Branches
-#   Get CustomerByID
-#   Get Main.Customers (With Warranty.Inventory)
 @jwt_required
 def adminGetRoles(request):
     if request.method == 'GET':
@@ -80,6 +77,7 @@ def adminGetRoles(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'            
             }, status=405)
 
+#   Get Users
 @jwt_required
 def adminGetUsers(request):
     if request.method == 'GET':
@@ -137,6 +135,7 @@ def adminGetUsers(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#   Get Branches
 @jwt_required
 def adminGetBranches(request):
     if request.method == 'GET':
@@ -194,6 +193,7 @@ def adminGetBranches(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
         }, status=405)
 
+#   Get Branch by CustomerID
 @jwt_required
 def getBranchByCustomerID(request):
     if request.method == 'GET':
@@ -263,6 +263,7 @@ def getBranchByCustomerID(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'            
             }, status=405)
 
+#  Get Product by BarCode
 @jwt_required
 def getProductByBarCode(request):
     if request.method == 'GET':
@@ -335,6 +336,7 @@ def getProductByBarCode(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+#  Get Branch by CustomerID
 @jwt_required
 def getBranchByCustomerID(request):
     if request.method == 'GET':
@@ -403,6 +405,7 @@ def getBranchByCustomerID(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+# Get Customer by UserID
 @jwt_required
 def getCustomerByUserID(request):
     if request.method == 'GET':
@@ -486,6 +489,7 @@ def getCustomerByUserID(request):
             'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+# Get Customer by CustomerID
 @jwt_required
 def adminGetCustomerByID(request):
     if request.method == 'GET':
@@ -551,6 +555,7 @@ def adminGetCustomerByID(request):
             'waring': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
             }, status=405)
 
+# Get Main Customers
 @jwt_required
 def adminGetMainCustomers(request):
     if request.method == 'GET':
@@ -1370,15 +1375,23 @@ def technicalServiceGetWarrantyByID(request):
                 f'PWD={os.environ["DB_PASSWORD"]};')
             cursor = connection.cursor()
 
-            # Se añadieron W.invoiceCopyPath y W.invoiceFileName al SELECT
             sql = """
                 SELECT 
-                    W.WarrantyNumber, W.purchaseDate, W.invoiceNumber, 
-                    W.invoiceCopyPath, W.invoiceFileName, 
-                    I.Description AS Brand, I.SubDescription3 AS Model, 
-                    S.description, W.usedCount, 
+                    W.WarrantyNumber,
+                    W.purchaseDate,
+                    W.invoiceNumber, 
+                    W.invoiceCopyPath,
+                    W.invoiceFileName, 
+                    I.Description AS Brand,
+                    I.SubDescription3 AS Model, 
+                    S.description,
+                    W.usedCount, 
                     COALESCE(TSS.statusDescription, 'N/A') AS TechnicalServiceStatus, 
-                    C.FirstName + ' ' + C.LastName AS Customer, C.NationalId, C.PhoneNumber, C.EmailAddress, B.companyName
+                    C.FirstName + ' ' + C.LastName AS Customer,
+                    C.NationalId,
+                    C.PhoneNumber,
+                    C.EmailAddress,
+                    B.companyName
                 FROM Warranty.warranty W
                 JOIN Main.Item I ON W.ItemId = I.ID AND W.isRetail = I.isRetail
                 JOIN Warranty.warrantyStatus S ON W.statusID = S.statusID
@@ -1394,43 +1407,22 @@ def technicalServiceGetWarrantyByID(request):
             warranty = cursor.fetchone()
 
             if warranty:
-                # Esta línea automáticamente incluirá invoiceCopyPath e invoiceFileName en el JSON
                 warranty_dict = dict(zip([column[0] for column in cursor.description], warranty))
                 return JsonResponse(warranty_dict, safe=False)
             else:
-                return JsonResponse({
-                    'error': 'Garantía no encontrada.',
-                    'warning': 'Grantía no encontrada.'
-                    }, status=404)
+                return JsonResponse({'error': 'Garantía no encontrada.', 'warning': 'Garantía no encontrada.'}, status=404)
 
         except pyodbc.Error as db_error:
-            if connection:
-                connection.rollback()
-            
-            return JsonResponse({
-                'error': f'A database error ocurred: {db_error}',
-                'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (DB Error)'
-                }, status=500)   
-
+            if connection: connection.rollback()
+            return JsonResponse({'error': f'DB Error: {db_error}', 'warning': 'Ha ocurrido un error, por favor inténtelo más tarde.'}, status=500)   
         except Exception as e:
-            if connection:
-                connection.rollback()
-            
-            return JsonResponse({
-                'error': str(e),
-                'warning': f'Ha ocurrido un error: {str(e)}'
-                }, status=500)
-        
+            if connection: connection.rollback()
+            return JsonResponse({'error': str(e), 'warning': f'Ha ocurrido un error: {str(e)}'}, status=500)
         finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
+            if cursor: cursor.close()
+            if connection: connection.close()
     else:
-        return JsonResponse({
-            'error': 'Invalid request method',
-            'warning': 'Ha ocurrido un error, por favor inténtelo más tarde. (Invalid Request)'
-            }, status=405)
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 #   3. Technical Service History
 def technicalServiceHistory(request):
@@ -1457,9 +1449,24 @@ def technicalServiceHistory(request):
             cursor = connection.cursor()
 
             sql = """
-                SELECT TS.CaseNumber, TS.warrantyID, TS.receptionDate, TS.lastUpdated, TS.closedDate, 
-                        C.FirstName + ' ' + C.LastName AS Customer, B.companyName, I.Description, TSS.statusDescription,
-                        W.branchID, I.BinLocation, I.SubDescription3 AS Brand, C.NationalId, C.PhoneNumber, C.EmailAddress
+                SELECT 
+                    TS.CaseNumber,
+                    TS.warrantyID,
+                    TS.receptionDate,
+                    TS.lastUpdated,
+                    TS.closedDate, 
+                    C.FirstName + ' ' + C.LastName AS Customer,
+                    B.companyName,
+                    I.Description,
+                    TSS.statusDescription,
+                    W.branchID,
+                    W.invoiceCopyPath,
+                    W.invoiceFileName,
+                    I.BinLocation,
+                    I.SubDescription3 AS Brand,
+                    C.NationalId,
+                    C.PhoneNumber,
+                    C.EmailAddress
                 FROM Warranty.technicalService TS
                 JOIN Warranty.warranty W ON TS.warrantyID = W.WarrantyNumber
 				JOIN Warranty.Users U ON W.registerID = U.userID

@@ -3,8 +3,6 @@ import requests
 from django.core.management.base import BaseCommand
 from api.onedrive import get_onedrive_headers
 
-
-
 class Command(BaseCommand):
     help = 'Test OneDrive file upload'
 
