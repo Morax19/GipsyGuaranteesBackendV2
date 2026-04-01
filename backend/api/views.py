@@ -2580,12 +2580,12 @@ def warrantyRegister(request):
                 public_invoice_url = response.json()['link']['webUrl']
 
                 # Check if the warranty already exists by invoiceNumber
-                cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ? AND ItemId = ?", (invoice_number, item_id))
-                if cursor.fetchone()[0] > 0:
-                    return JsonResponse({
-                        'error': 'Ya existe una garantía para este producto asociada a esta factura.',
-                        'warning': 'Ya existe una garantía para este producto asociada a esta factura.'
-                        }, status=400)
+                #cursor.execute("SELECT COUNT(*) FROM Warranty.warranty WHERE invoiceNumber = ? AND ItemId = ?", (invoice_number, item_id))
+                #if cursor.fetchone()[0] > 0:
+                #    return JsonResponse({
+                #        'error': 'Ya existe una garantía para este producto asociada a esta factura.',
+                #        'warning': 'Ya existe una garantía para este producto asociada a esta factura.'
+                #        }, status=400)
 
                 # --- QUERY ACTUALIZADO ---
                 # Se añadió invoiceFileName al INSERT y su respectivo parámetro '?' en VALUES
