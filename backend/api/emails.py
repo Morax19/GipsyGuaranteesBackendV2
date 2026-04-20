@@ -533,7 +533,12 @@ def send_warranty_register_email(data):
             f"Servicio de Garantías - Nuevo Registro de Garantía #{data['warranty_id']}",
             email_content_intern,
             os.environ.get('EMAIL_HOST_USER'),
-            [os.environ.get('EMAIL_WARRANTY_GIPSYCORP')]
+            # DESTINATARIOS
+            [
+                os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                os.environ.get('EMAIL_WARRANTY_SERVTEC_1'),
+                os.environ.get('EMAIL_WARRANTY_SERVTEC_2')
+            ]
         )
 
         msg_intern.content_subtype = "html"

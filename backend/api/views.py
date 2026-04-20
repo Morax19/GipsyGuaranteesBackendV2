@@ -2571,7 +2571,7 @@ def warrantyRegister(request):
                         }, status=500)
 
                 data = resp.json()
-                invoice_copy_path = data["webUrl"]
+                #invoice_copy_path = data["webUrl"]
 
                 # Generación de enlace público para la factura
                 file_id = data['id']
