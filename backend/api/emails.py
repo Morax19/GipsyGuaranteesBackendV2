@@ -536,8 +536,7 @@ def send_warranty_register_email(data):
             # DESTINATARIOS
             [
                 os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
-                os.environ.get('EMAIL_WARRANTY_SERVTEC_1'),
-                os.environ.get('EMAIL_WARRANTY_SERVTEC_2')
+                os.environ.get('EMAIL_WARRANTY_SERVTEC_1')
             ]
         )
 
