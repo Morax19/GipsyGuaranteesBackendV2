@@ -810,6 +810,7 @@ def send_warranty_open_case_email(data):
             os.environ.get('EMAIL_HOST_USER'),
             [
                 os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                os.environ.get('EMAIL_WARRANTY_SERVTEC_1'),
                 data['email_address']['technical_service']
             ]
         )
@@ -1100,6 +1101,7 @@ def send_warranty_update_case_email(data):
             os.environ.get('EMAIL_HOST_USER'),
             [
                 os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                os.environ.get('EMAIL_WARRANTY_SERVTEC_1'),
                 data['email_address']['technical_service']
             ]
         )
@@ -1396,6 +1398,7 @@ def send_warranty_close_case_email(data):
             os.environ.get('EMAIL_HOST_USER'),
             [
                 os.environ.get('EMAIL_WARRANTY_GIPSYCORP'),
+                os.environ.get('EMAIL_WARRANTY_SERVTEC_1'),
                 data['email_address']['technical_service'],
             ]
         )
